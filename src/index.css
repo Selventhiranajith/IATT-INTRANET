@@ -1,0 +1,233 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* JS Bank Intranet Portal Aesthetic */
+    --background: 37 100% 94%;
+    /* Peach White #fff3e0 */
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 29 100% 54%;
+    /* Orange #ff8412 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 35 90% 60%;
+    /* Accent Orange */
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 94%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 29 100% 54%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 29 100% 54%;
+
+    --radius: 1.5rem;
+    /* More rounded as seen in image */
+
+    /* JS Bank Specific Styles */
+    --sidebar-bg: 0 0% 100%;
+    --sidebar-active: 29 100% 54%;
+    --sidebar-text: 215 20% 50%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 15%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 15%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 29 100% 54%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 29 100% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 29 100% 54%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 29 100% 54%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+
+  /* Glassmorphism Base */
+  /* Redefining Glass to Solid SaaS */
+  .glass {
+    @apply bg-white border border-slate-200 shadow-sm;
+  }
+
+  .glass-card {
+    @apply bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  .glass-dark {
+    @apply bg-slate-900 border border-slate-800;
+  }
+
+  .glass-surface {
+    @apply bg-background border border-slate-200 rounded-2xl;
+  }
+
+  /* Solid Background */
+  .gradient-bg,
+  .gradient-bg-animated {
+    @apply bg-[#fff3e0];
+    background: #fff3e0;
+    animation: none;
+  }
+
+  /* Button Variants */
+  .btn-glass {
+    @apply bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all duration-200 rounded-xl shadow-sm active:scale-[0.98];
+  }
+
+  .btn-glass-primary {
+    @apply bg-primary text-white hover:bg-primary/90 transition-all duration-200 rounded-xl shadow-sm shadow-primary/20 hover:scale-[1.01] active:scale-[0.98];
+  }
+
+  /* Glass Input */
+  .input-glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/30 text-white placeholder:text-white/60 rounded-xl focus:border-white/50 focus:ring-2 focus:ring-white/25 transition-all duration-300;
+  }
+
+  /* Sidebar Styles */
+  /* Sidebar Styles */
+  .sidebar-glass {
+    @apply bg-white border-r border-slate-200;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-background hover:text-primary transition-all duration-200 cursor-pointer;
+  }
+
+  .sidebar-item-active {
+    @apply bg-primary text-white font-medium shadow-lg shadow-primary/20 hover:text-white hover:bg-primary;
+  }
+
+  /* Card Hover Effects */
+  .card-hover {
+    @apply transition-all duration-300 hover:translate-y-[-4px] hover:shadow-2xl hover:shadow-black/10;
+  }
+
+  /* Header Styles */
+  .header-glass {
+    @apply bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center;
+  }
+
+  /* Widget Cards */
+  .widget-card {
+    @apply glass-card p-6 card-hover;
+  }
+}
+
+@layer utilities {
+
+  /* Custom Scrollbar for Glass Elements */
+  .scrollbar-glass::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-glass::-webkit-scrollbar-track {
+    @apply bg-white/10 rounded-full;
+  }
+
+  .scrollbar-glass::-webkit-scrollbar-thumb {
+    @apply bg-white/30 rounded-full hover:bg-white/50;
+  }
+
+  /* Text Shadows for Readability */
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(255, 132, 18, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(255, 132, 18, 0.5);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
