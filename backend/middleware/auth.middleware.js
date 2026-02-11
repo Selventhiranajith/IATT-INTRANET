@@ -39,9 +39,9 @@ exports.verifyToken = (req, res, next) => {
     }
 };
 
-// Check if user is admin
+// Check if user is admin or superadmin
 exports.isAdmin = (req, res, next) => {
-    if (req.userRole !== 'admin') {
+    if (req.userRole !== 'admin' && req.userRole !== 'superadmin') {
         return res.status(403).json({
             success: false,
             message: 'Access denied. Admin privileges required.'
@@ -84,3 +84,5 @@ exports.hasRole = (...roles) => {
         next();
     };
 };
+
+exports.isAdminOrSuperAdmin = exports.isAdmin;

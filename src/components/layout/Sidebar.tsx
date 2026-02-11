@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  FileEdit, 
+import {
+  LayoutDashboard,
+  Calendar,
+  FileEdit,
   FileCheck,
   Eye,
   Fingerprint,
@@ -46,16 +46,16 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  { 
-    label: 'Attendance', 
+  {
+    label: 'Attendance',
     icon: Calendar,
     children: [
-      { label: 'Manual Attendance', icon: FileEdit, path: '/attendance/manual' },
+      { label: 'Daily Attendance', icon: FileEdit, path: '/attendance/manual' },
       // { label: 'Apply Leave', icon: FileCheck, path: '/attendance/apply-leave' },
     ]
   },
-  { 
-    label: 'View Attendance & Leave', 
+  {
+    label: 'View Attendance & Leave',
     icon: Notebook,
     children: [
       { label: 'View Bio Attendance', icon: Fingerprint, path: '/attendance/bio', adminOnly: true },
@@ -63,23 +63,23 @@ const menuItems: MenuItem[] = [
       // { label: 'View Leave', icon: FileText, path: '/attendance/view-leave', adminOnly: true },
     ]
   },
-  { 
-    label: 'Projects & Products', 
+  {
+    label: 'Projects & Products',
     icon: FolderKanban,
     children: [
       { label: 'Products', icon: Package, path: '/projects/products' },
     ]
   },
-  { 
-    label: 'Documents', 
+  {
+    label: 'Documents',
     icon: Files,
     children: [
       { label: 'Admin', icon: User, path: '/documents/admin' },
       { label: 'Management', icon: FileText, path: '/documents/management' },
     ]
   },
-  { 
-    label: 'Miscellaneous', 
+  {
+    label: 'Miscellaneous',
     icon: ScrollText,
     children: [
       { label: 'Employee', icon: FileEdit, path: '/attendance/employee' },
@@ -108,8 +108,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const [expandedItems, setExpandedItems] = useState<string[]>(['Employee & Events']);
 
   const toggleExpand = (label: string) => {
-    setExpandedItems(prev => 
-      prev.includes(label) 
+    setExpandedItems(prev =>
+      prev.includes(label)
         ? prev.filter(item => item !== label)
         : [...prev, label]
     );
@@ -162,8 +162,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           }}
           className={cn(
             'flex items-center gap-4 w-full px-6 py-4 rounded-2xl transition-all duration-200 group relative',
-            active 
-              ? 'bg-primary text-white shadow-lg shadow-primary/25 font-bold' 
+            active
+              ? 'bg-primary text-white shadow-lg shadow-primary/25 font-bold'
               : 'text-slate-400 hover:text-slate-900 hover:bg-background font-bold',
             depth > 0 && 'pl-12 text-sm py-3'
           )}
@@ -184,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             </span>
           )}
         </button>
-        
+
         {hasChildren && isExpanded && isOpen && (
           <div className="mt-1 space-y-1">
             {item.children!.map(child => renderMenuItem(child, depth + 1))}
@@ -247,7 +247,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                   'flex items-center gap-4 w-full py-3 rounded-2xl transition-all duration-300 group relative',
                   isOpen ? 'px-6' : 'justify-center px-0',
                   active || anyChildActive
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02]' 
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02]'
                     : 'text-slate-500 hover:text-primary hover:bg-background'
                 )}
               >
@@ -268,7 +268,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                   )} />
                 )}
               </button>
-              
+
               {hasChildren && isExpanded && isOpen && (
                 <div className="ml-4 pl-4 border-l border-slate-100 space-y-1 py-1">
                   {item.children!.map((child) => (
@@ -277,8 +277,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                       onClick={() => navigate(child.path!)}
                       className={cn(
                         'flex items-center gap-4 w-full px-4 py-2 rounded-full transition-all duration-200 group relative',
-                        isActive(child.path) 
-                          ? 'bg-primary/5 text-primary font-bold' 
+                        isActive(child.path)
+                          ? 'bg-primary/5 text-primary font-bold'
                           : 'text-slate-400 hover:text-primary hover:bg-background font-medium'
                       )}
                     >
@@ -315,7 +315,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
               <span className="text-xl">🎂</span>
               <h4 className="text-[#9333ea] font-black text-sm tracking-tight uppercase">Today's Birthdays</h4>
             </div>
-            
+
             {todaysBirthdays.length > 0 ? (
               <div className="space-y-3 pl-8">
                 {todaysBirthdays.map((bday, i) => (

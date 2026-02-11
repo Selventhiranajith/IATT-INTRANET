@@ -1,5 +1,6 @@
+import { useAuth } from "@/contexts/AuthContext";
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, UserPlus, Search, Edit2, Trash2, Mail, Building2, Loader2, Key, Phone, User as UserIcon } from 'lucide-react';
+import { ShieldCheck, UserPlus, Search, Edit2, Trash2, Mail, Building2, Loader2, Key, Phone, User as UserIcon, MapPin, Calendar } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -27,12 +28,15 @@ interface User {
   first_name: string;
   last_name: string;
   role: string;
+  branch?: string;
   department: string;
   position: string;
   status: string;
+  birth_date?: string;
 }
 
 const UserManagement: React.FC = () => {
+  const { user: currentUser, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingUser, setIsAddingUser] = useState(false);
@@ -46,8 +50,10 @@ const UserManagement: React.FC = () => {
     first_name: '',
     last_name: '',
     role: 'employee',
+    branch: 'Guindy',
     department: '',
     position: '',
+    birth_date: '',
     phone: ''
   });
 
@@ -78,6 +84,12 @@ const UserManagement: React.FC = () => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    if (currentUser && !isSuperAdmin && currentUser.branch) {
+      setFormData(prev => ({ ...prev, branch: currentUser.branch || 'Guindy' }));
+    }
+  }, [currentUser, isSuperAdmin]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -87,18 +99,31 @@ const UserManagement: React.FC = () => {
     setFormData(prev => ({ ...prev, role: value }));
   };
 
+  const handleBranchChange = (value: string) => {
+    setFormData(prev => ({ ...prev, branch: value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAddingUser(true);
     try {
       const token = localStorage.getItem('token');
+
+      // If not superadmin, branch is determined by backend based on creator's branch
+      // But we can send it anyway if we want, backend will override or validate
+      const payload = { ...formData };
+      if (!isSuperAdmin) {
+        // Optionally remove branch from payload if we want to rely strictly on backend
+        // payload.branch = undefined; 
+      }
+
       const response = await fetch('http://localhost:5000/api/auth/admin/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -113,8 +138,10 @@ const UserManagement: React.FC = () => {
           first_name: '',
           last_name: '',
           role: 'employee',
+          branch: 'Guindy',
           department: '',
           position: '',
+          birth_date: '',
           phone: ''
         });
         fetchUsers();
@@ -132,7 +159,8 @@ const UserManagement: React.FC = () => {
   const filteredUsers = users.filter(user =>
     `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.department?.toLowerCase().includes(searchQuery.toLowerCase())
+    user.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.employee_id?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -217,19 +245,53 @@ const UserManagement: React.FC = () => {
                       <SelectItem value="manager">Manager</SelectItem>
                       <SelectItem value="hr">HR Personnel</SelectItem>
                       <SelectItem value="admin">Administrator</SelectItem>
+                      {isSuperAdmin && <SelectItem value="superadmin">Superadmin</SelectItem>}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {isSuperAdmin ? (
+                  <div className="space-y-2">
+                    <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest pl-1">Branch</Label>
+                    <Select onValueChange={handleBranchChange} value={formData.branch}>
+                      <SelectTrigger className="h-14 rounded-xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-bold">
+                        <SelectValue placeholder="Select Branch" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                        <SelectItem value="Guindy">Guindy</SelectItem>
+                        <SelectItem value="Nungambakkam">Nungambakkam</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest pl-1">Branch</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input value={currentUser?.branch || 'Your Branch'} disabled className="pl-12 h-14 rounded-xl border-slate-100 bg-slate-100 text-slate-500 font-bold" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest pl-1">Department</Label>
                   <Input name="department" value={formData.department} onChange={handleInputChange} placeholder="IT / Sales / HR" className="h-14 rounded-xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-bold" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest pl-1">Position</Label>
+                  <Input name="position" value={formData.position} onChange={handleInputChange} placeholder="Junior Developer" className="h-14 rounded-xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-bold" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest pl-1">Position</Label>
-                  <Input name="position" value={formData.position} onChange={handleInputChange} placeholder="Junior Developer" className="h-14 rounded-xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-bold" />
+                  <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest pl-1">Date of Birth</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input name="birth_date" type="date" value={formData.birth_date} onChange={handleInputChange} className="pl-12 h-14 rounded-xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-bold" />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest pl-1">Phone Number</Label>

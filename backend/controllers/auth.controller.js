@@ -6,7 +6,7 @@ const authConfig = require('../config/auth.config');
 // Register new user
 exports.register = async (req, res) => {
     try {
-        const { employee_id, email, password, first_name, last_name, role, department, position, phone } = req.body;
+        const { employee_id, email, password, first_name, last_name, role, branch, department, position, birth_date, phone } = req.body;
 
         // Validate required fields
         if (!email || !password || !first_name || !last_name) {
@@ -14,6 +14,32 @@ exports.register = async (req, res) => {
                 success: false,
                 message: 'Please provide all required fields'
             });
+        }
+
+        // Determine Creator Role & Branch Logic
+        let assignedBranch = branch;
+        let assignedRole = role || 'employee';
+
+        // If request is authenticated (Admin creating a user)
+        if (req.userId) {
+            const creator = await User.findById(req.userId);
+
+            if (creator.role === 'admin') {
+                // Admin can only create users for their own branch
+                if (!creator.branch) {
+                    return res.status(403).json({
+                        success: false,
+                        message: 'Admin must have a valid branch assigned to create users.'
+                    });
+                }
+                assignedBranch = creator.branch;
+
+                // Optional: Force role to employee if admin shouldn't create other admins
+                // assignedRole = 'employee'; 
+            } else if (creator.role === 'superadmin') {
+                // Superadmin can assign any branch
+                assignedBranch = branch;
+            }
         }
 
         // Check if user already exists
@@ -47,9 +73,11 @@ exports.register = async (req, res) => {
             password: hashedPassword,
             first_name,
             last_name,
-            role,
+            role: assignedRole,
+            branch: assignedBranch,
             department,
             position,
+            birth_date,
             phone
         });
 
@@ -77,7 +105,7 @@ exports.register = async (req, res) => {
 // Login user
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, branch } = req.body;
 
         // Validate input
         if (!email || !password) {
@@ -103,6 +131,19 @@ exports.login = async (req, res) => {
                 message: 'Your account is not active. Please contact administrator.'
             });
         }
+
+        // Verify Branch Access
+        // If user has a specific branch assigned (Admin/Employee), they must select that branch
+        // If user is Superadmin (branch is NULL), they can log in to any branch context
+        if (user.branch && branch && user.branch !== branch) {
+            return res.status(403).json({
+                success: false,
+                message: `Access denied. You belong to the ${user.branch} branch.`
+            });
+        }
+
+        // If user is regular employee/admin and didn't select a branch (if optional), or if frontend always sends it.
+        // We enforce branch match if user.branch exists.
 
         // Verify password
         // Verify password (plain text comparison as requested)
@@ -253,7 +294,16 @@ exports.changePassword = async (req, res) => {
 // Get all users (Admin only)
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.findAll();
+        const currentUser = await User.findById(req.userId);
+
+        let filters = {};
+
+        // If admin (not superadmin), filter by their branch
+        if (currentUser.role === 'admin' && currentUser.branch) {
+            filters.branch = currentUser.branch;
+        }
+
+        const users = await User.findAll(filters);
 
         res.status(200).json({
             success: true,

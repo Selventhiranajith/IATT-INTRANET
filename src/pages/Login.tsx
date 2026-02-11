@@ -9,7 +9,7 @@ const Login: React.FC = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [branch, setBranch] = useState('Chennai');
+  const [branch, setBranch] = useState('Guindy');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentImage, setCurrentImage] = useState('/assets/login-1.png');
@@ -78,9 +78,8 @@ const Login: React.FC = () => {
                 className="w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-100 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium appearance-none"
                 required
               >
-                <option value="Chennai">Chennai</option>
-                <option value="Bangalore">Bangalore</option>
-                <option value="Hyderabad">Hyderabad</option>
+                <option value="Guindy">Guindy</option>
+                <option value="Nungambakkam">Nungambakkam</option>
               </select>
             </div>
 

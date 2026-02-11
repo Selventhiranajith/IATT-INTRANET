@@ -5,6 +5,7 @@ require('dotenv').config();
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
+const attendanceRoutes = require('./routes/attendance.routes');
 
 // Initialize express app
 const app = express();
@@ -12,7 +13,9 @@ const app = express();
 // Middleware
 app.use(cors({
     origin: process.env.FRONTEND_URL || ['http://localhost:5173', 'http://localhost:8080'],
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(bodyParser.json());
@@ -35,6 +38,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -44,7 +48,8 @@ app.get('/', (req, res) => {
         version: '1.0.0',
         endpoints: {
             health: '/health',
-            auth: '/api/auth'
+            auth: '/api/auth',
+            attendance: '/api/attendance'
         }
     });
 });

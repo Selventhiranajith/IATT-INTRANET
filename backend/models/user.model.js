@@ -18,7 +18,7 @@ class User {
     static async findById(id) {
         try {
             const [rows] = await db.query(
-                'SELECT id, employee_id, email, first_name, last_name, role, department, position, phone, status, last_login, created_at FROM users WHERE id = ? LIMIT 1',
+                'SELECT id, employee_id, email, first_name, last_name, role, branch, department, position, phone, status, last_login, created_at FROM users WHERE id = ? LIMIT 1',
                 [id]
             );
             return rows[0] || null;
@@ -43,12 +43,12 @@ class User {
     // Create new user
     static async create(userData) {
         try {
-            const { employee_id, email, password, first_name, last_name, role, department, position, phone } = userData;
+            const { employee_id, email, password, first_name, last_name, role, branch, department, position, birth_date, phone } = userData;
 
             const [result] = await db.query(
-                `INSERT INTO users (employee_id, email, password, first_name, last_name, role, department, position, phone, status) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
-                [employee_id, email, password, first_name, last_name, role || 'employee', department, position, phone]
+                `INSERT INTO users (employee_id, email, password, first_name, last_name, role, branch, department, position, birth_date, phone, status) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
+                [employee_id, email, password, first_name, last_name, role || 'employee', branch, department, position, birth_date, phone]
             );
 
             return result.insertId;
@@ -86,12 +86,17 @@ class User {
     // Get all users (for admin)
     static async findAll(filters = {}) {
         try {
-            let query = 'SELECT id, employee_id, email, first_name, last_name, role, department, position, phone, status, last_login, created_at FROM users WHERE 1=1';
+            let query = 'SELECT id, employee_id, email, first_name, last_name, role, branch, department, position, birth_date, phone, status, last_login, created_at FROM users WHERE 1=1';
             const params = [];
 
             if (filters.role) {
                 query += ' AND role = ?';
                 params.push(filters.role);
+            }
+
+            if (filters.branch) {
+                query += ' AND branch = ?';
+                params.push(filters.branch);
             }
 
             if (filters.status) {

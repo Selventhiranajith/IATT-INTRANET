@@ -10,9 +10,11 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    role ENUM('admin', 'employee', 'manager', 'hr') DEFAULT 'employee',
+    role ENUM('superadmin', 'admin', 'employee') DEFAULT 'employee',
+    branch ENUM('Guindy', 'Nungambakkam') DEFAULT NULL,
     department VARCHAR(100),
     position VARCHAR(100),
+    birth_date DATE,
     phone VARCHAR(20),
     status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
     last_login DATETIME,
@@ -21,36 +23,75 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_email (email),
     INDEX idx_employee_id (employee_id),
     INDEX idx_role (role),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_branch (branch)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Sample Admin User (password: admin123)
--- Password is hashed using bcrypt
-INSERT INTO users (employee_id, email, password, first_name, last_name, role, department, position, status) 
+-- Sample Superadmin (Handles both branches)
+-- Password: superadmin123
+INSERT INTO users (employee_id, email, password, first_name, last_name, role, branch, department, position, status, birth_date) 
 VALUES (
-    'EMP001',
-    'venkatesanv@iattechnologies.com',
-    'pass123',
+    'SA001',
+    'superadmin@iattechnologies.com',
+    'superadmin123', -- Plain text password
+    'Super',
     'Admin',
-    'User',
-    'admin',
-    'IT',
-    'System Administrator',
-    'active'
+    'superadmin',
+    NULL, -- Superadmin has access to all branches
+    'Management',
+    'Director',
+    'active',
+    '1980-01-01'
 );
 
--- Sample Employee User (password: employee123)
-INSERT INTO users (employee_id, email, password, first_name, last_name, role, department, position, status) 
+-- Sample Admin (Guindy Branch)
+-- Password: admin123
+INSERT INTO users (employee_id, email, password, first_name, last_name, role, branch, department, position, status, birth_date) 
 VALUES (
-    'EMP002',
-    'employee@intranet.com',
-    '$2a$10$YourHashedPasswordHere',
+    'ADM001',
+    'admin.guindy@iattechnologies.com',
+    'admin123', -- Plain text password
+    'Guindy',
+    'Admin',
+    'admin',
+    'Guindy',
+    'Operations',
+    'Branch Manager',
+    'active',
+    '1985-06-15'
+);
+
+-- Sample Admin (Nungambakkam Branch)
+-- Password: admin123
+INSERT INTO users (employee_id, email, password, first_name, last_name, role, branch, department, position, status, birth_date) 
+VALUES (
+    'ADM002',
+    'admin.nungambakkam@iattechnologies.com',
+    'admin123', -- Plain text password
+    'Nungambakkam',
+    'Admin',
+    'admin',
+    'Nungambakkam',
+    'Operations',
+    'Branch Manager',
+    'active',
+    '1988-03-22'
+);
+
+-- Sample Employee (Guindy Branch)
+INSERT INTO users (employee_id, email, password, first_name, last_name, role, branch, department, position, status, birth_date) 
+VALUES (
+    'EMP001',
+    'employee.guindy@iattechnologies.com',
+    'employee123', -- Plain text password
     'John',
     'Doe',
     'employee',
-    'Sales',
-    'Sales Executive',
-    'active'
+    'Guindy',
+    'Development',
+    'Software Engineer',
+    'active',
+    '1995-08-10'
 );
 
 -- Sessions Table (Optional - for tracking active sessions)
@@ -79,4 +120,23 @@ CREATE TABLE IF NOT EXISTS password_resets (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_token (token),
     INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Attendance Logs Table
+CREATE TABLE IF NOT EXISTS attendance_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    date DATE NOT NULL,
+    check_in DATETIME NOT NULL,
+    check_out DATETIME,
+    check_in_remarks TEXT,
+    check_out_remarks TEXT,
+    status ENUM('active', 'completed') DEFAULT 'active',
+    duration_minutes DECIMAL(10, 2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_date (date),
+    INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

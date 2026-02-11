@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Map backend roles to frontend roles
-// Backend: 'admin', 'employee', 'manager', 'hr'
+// Backend: 'superadmin', 'admin', 'employee', 'manager', 'hr'
 // Frontend: 'SUPERADMIN', 'ADMIN', 'USER'
 export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'USER';
 
@@ -12,9 +12,10 @@ export interface User {
   role: UserRole;
   avatar?: string;
   department?: string;
-  branch: string;
+  branch?: string;
   position?: string;
   employee_id?: string;
+  birth_date?: string;
 }
 
 interface AuthContextType {
@@ -36,15 +37,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Map backend user to frontend user
-  const mapUser = (backendUser: any, branch: string = 'Chennai'): User => {
+  const mapUser = (backendUser: any): User => {
     let role: UserRole = 'USER';
 
     // Role mapping based on backend role
-    // Backend roles: 'admin', 'employee', 'manager', 'hr'
-    if (backendUser.role === 'admin') {
-      role = 'SUPERADMIN'; // Admin gets full access
-    } else if (backendUser.role === 'manager' || backendUser.role === 'hr') {
-      role = 'ADMIN'; // Managers/HR get admin access
+    if (backendUser.role === 'superadmin') {
+      role = 'SUPERADMIN';
+    } else if (backendUser.role === 'admin' || backendUser.role === 'manager' || backendUser.role === 'hr') {
+      role = 'ADMIN';
     }
 
     return {
@@ -53,9 +53,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       email: backendUser.email,
       role: role,
       department: backendUser.department || 'General',
-      branch: branch,
+      branch: backendUser.branch || undefined, // Use updated branch from backend
       position: backendUser.position || 'Staff',
-      employee_id: backendUser.employee_id
+      employee_id: backendUser.employee_id,
+      birth_date: backendUser.birth_date
     };
   };
 
@@ -97,7 +98,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, branch }),
       });
 
       const data = await response.json();
@@ -109,7 +110,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('token', token);
 
         // Update user state
-        setUser(mapUser(backendUser, branch));
+        setUser(mapUser(backendUser));
         return true;
       }
 
