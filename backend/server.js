@@ -6,6 +6,8 @@ require('dotenv').config();
 // Import routes
 const authRoutes = require('./routes/auth.routes');
 const attendanceRoutes = require('./routes/attendance.routes');
+const eventRoutes = require('./routes/event.routes');
+const thoughtRoutes = require('./routes/thought.routes');
 
 // Initialize express app
 const app = express();
@@ -24,8 +26,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Request logging middleware
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
+
+// Serve static files
+app.use('/uploads', express.static('uploads'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -39,6 +45,8 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/thoughts', thoughtRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

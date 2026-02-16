@@ -76,6 +76,7 @@ const EmployeePage: React.FC = () => {
     role: 'employee',
     department: '',
     position: '',
+    birth_date: '',
     phone: ''
   });
 
@@ -111,6 +112,7 @@ const EmployeePage: React.FC = () => {
           role: 'employee',
           department: '',
           position: '',
+          birth_date: '',
           phone: ''
         });
         fetchEmployees();
@@ -428,6 +430,28 @@ const EmployeePage: React.FC = () => {
                 onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
                 className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Date of Birth</Label>
+                <Input
+                  type="date"
+                  value={newEmployee.birth_date}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, birth_date: e.target.value })}
+                  className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Phone Number</Label>
+                <Input
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={newEmployee.phone}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, phone: e.target.value })}
+                  className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-6">

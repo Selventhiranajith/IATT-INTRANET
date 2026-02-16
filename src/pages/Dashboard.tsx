@@ -101,9 +101,7 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAdmin, isSuperAdmin } = useAuth();
-  const [thought, setThought] = useState('');
   const [isEditingThought, setIsEditingThought] = useState(false);
-  const [tempThought, setTempThought] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -116,6 +114,45 @@ const Dashboard: React.FC = () => {
 
   const [recentMembers, setRecentMembers] = useState<any[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
+
+  // Thought state
+  const [thoughtContent, setThoughtContent] = useState('');
+  const [thoughtAuthor, setThoughtAuthor] = useState('');
+  const [currentThought, setCurrentThought] = useState<any>(null);
+  const [isLoadingThought, setIsLoadingThought] = useState(true);
+
+  // Fetch random thought for the user's branch
+  const fetchRandomThought = async () => {
+    if (!user?.branch) return;
+
+    setIsLoadingThought(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/thoughts/random/${user.branch}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success && data.data.thought) {
+        setCurrentThought(data.data.thought);
+      } else {
+        // Default thought if none found
+        setCurrentThought({
+          content: 'Success is not final, failure is not fatal: it is the courage to continue that counts.',
+          author: 'Winston Churchill'
+        });
+      }
+    } catch (error) {
+      console.error('Fetch thought error:', error);
+      setCurrentThought({
+        content: 'Success is not final, failure is not fatal: it is the courage to continue that counts.',
+        author: 'Winston Churchill'
+      });
+    } finally {
+      setIsLoadingThought(false);
+    }
+  };
 
   const fetchRecentMembers = async () => {
     try {
@@ -142,7 +179,8 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchRecentMembers();
-  }, []);
+    fetchRandomThought();
+  }, [user?.branch]);
 
   // Carousel State
   const [api, setApi] = React.useState<CarouselApi>();
@@ -177,25 +215,6 @@ const Dashboard: React.FC = () => {
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const goToToday = () => setCurrentDate(new Date());
-
-  // Persist thought and check for daily clear
-  React.useEffect(() => {
-    const savedThought = localStorage.getItem('dailyThought');
-    const savedDate = localStorage.getItem('dailyThoughtDate');
-    const today = format(new Date(), 'yyyy-MM-dd');
-
-    if (savedDate === today && savedThought) {
-      setThought(savedThought);
-      setTempThought(savedThought);
-    } else {
-      // Clear or set default for new day
-      const defaultThought = '"Success is not final, failure is not fatal: it is the courage to continue that counts." - Winston Churchill';
-      setThought(defaultThought);
-      setTempThought(defaultThought);
-      localStorage.removeItem('dailyThought');
-      localStorage.removeItem('dailyThoughtDate');
-    }
-  }, []);
 
   const events = [
     { title: 'Quarterly Review Meeting', date: 'Feb 5, 2024', time: '10:00 AM' },
@@ -232,17 +251,43 @@ const Dashboard: React.FC = () => {
     remote: 6,
   };
 
-  const saveThought = () => {
-    if (!tempThought.trim()) {
-      toast.error("Please enter a thought");
+  const saveThought = async () => {
+    if (!thoughtContent.trim() || !thoughtAuthor.trim()) {
+      toast.error("Please enter both content and author name");
       return;
     }
-    const today = format(new Date(), 'yyyy-MM-dd');
-    setThought(tempThought);
-    localStorage.setItem('dailyThought', tempThought);
-    localStorage.setItem('dailyThoughtDate', today);
-    setIsEditingThought(false);
-    toast.success("Thought of the day updated!");
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/thoughts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          content: thoughtContent,
+          author: thoughtAuthor,
+          branch: user?.branch
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Thought created successfully!");
+        setIsEditingThought(false);
+        setThoughtContent('');
+        setThoughtAuthor('');
+        // Refresh the thought display
+        fetchRandomThought();
+      } else {
+        toast.error(data.message || "Failed to create thought");
+      }
+    } catch (error) {
+      console.error('Create thought error:', error);
+      toast.error("Error creating thought");
+    }
   };
 
   const saveEvent = () => {
@@ -268,7 +313,7 @@ const Dashboard: React.FC = () => {
             {/* Left Content */}
             <div className="flex-1 p-5 flex flex-col justify-center relative z-10">
               <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">
-                Welcome, <span className="text-primary">{user?.name?.split(" ")[0]}</span>
+                Welcome, <span className="text-primary">{user?.branch === 'Guindy' ? 'IAT Technologies' : user?.branch === 'Nungambakkam' ? 'IAT Solutions' : user?.name?.split(" ")[0]}</span>
               </h1>
 
               {isSuperAdmin && (
@@ -347,9 +392,12 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Thought of the Day (1/4 slot) */}
-        <div className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm relative overflow-hidden flex flex-col group">
+        <div
+          onClick={() => navigate('/misc/thoughts')}
+          className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm relative overflow-hidden flex flex-col group cursor-pointer hover:shadow-xl hover:shadow-orange-100/50 transition-all duration-300"
+        >
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
+            <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
               <Quote className="w-4.5 h-4.5" />
             </div>
             <span className="text-orange-500 font-black text-[10px] uppercase tracking-widest">
@@ -358,18 +406,34 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="flex-1 flex flex-col justify-center">
-            <p className="text-slate-800 font-bold italic text-sm leading-relaxed line-clamp-4">
-              {thought}
-            </p>
+            {isLoadingThought ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+              </div>
+            ) : currentThought ? (
+              <>
+                <p className="text-slate-800 font-bold italic text-sm leading-relaxed line-clamp-3">
+                  "{currentThought.content}"
+                </p>
+                <p className="text-slate-500 font-bold text-xs mt-2">
+                  - {currentThought.author}
+                </p>
+              </>
+            ) : (
+              <p className="text-slate-400 text-xs">No thought available</p>
+            )}
           </div>
 
           {isAdmin && (
             <button
-              onClick={() => setIsEditingThought(true)}
-              className="px-4 py-1.5 rounded-xl bg-orange-500 text-white font-black text-[10px] hover:bg-orange-600 transition-all flex items-center gap-1.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditingThought(true);
+              }}
+              className="px-4 py-1.5 rounded-xl bg-orange-500 text-white font-black text-[10px] hover:bg-orange-600 transition-all flex items-center gap-1.5 mt-3 z-10"
             >
               <Plus className="w-3 h-3" />
-              Add Phrase
+              Add Thought
             </button>
           )}
 
@@ -684,29 +748,46 @@ const Dashboard: React.FC = () => {
 
       {/* Edit Thought Modal */}
       <Dialog open={isEditingThought} onOpenChange={setIsEditingThought}>
-        <DialogContent className="sm:max-w-[525px] rounded-[2rem]">
+        <DialogContent className="sm:max-w-[525px] rounded-[2rem] border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add Thought of the Day</DialogTitle>
+            <p className="text-slate-500 font-medium text-sm mt-2">Share an inspiring thought with your team</p>
           </DialogHeader>
-          <div className="py-6">
-            <Textarea
-              placeholder="Enter today's inspiring thought..."
-              value={tempThought}
-              onChange={(e) => setTempThought(e.target.value)}
-              className="min-h-[150px] rounded-[1.5rem] border-slate-100 focus:border-primary/20 focus:ring-primary/10 font-medium text-lg p-6"
-            />
+          <div className="py-6 space-y-6">
+            <div className="space-y-2">
+              <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Content</Label>
+              <Textarea
+                placeholder="Enter the inspiring thought or quote..."
+                value={thoughtContent}
+                onChange={(e) => setThoughtContent(e.target.value)}
+                className="min-h-[120px] rounded-xl border-slate-100 focus:border-orange-500/20 focus:ring-orange-500/10 font-medium text-base p-4 resize-none"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Author Name</Label>
+              <Input
+                placeholder="e.g., Winston Churchill"
+                value={thoughtAuthor}
+                onChange={(e) => setThoughtAuthor(e.target.value)}
+                className="rounded-xl h-12 border-slate-100 focus:border-orange-500/20 focus:ring-orange-500/10 font-medium"
+              />
+            </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-3">
             <Button
-              onClick={() => setIsEditingThought(false)}
+              onClick={() => {
+                setIsEditingThought(false);
+                setThoughtContent('');
+                setThoughtAuthor('');
+              }}
               variant="outline"
-              className="rounded-xl font-bold border-slate-100 text-slate-500"
+              className="rounded-xl font-bold border-slate-100 text-slate-500 hover:bg-slate-50"
             >
               Cancel
             </Button>
             <Button
               onClick={saveThought}
-              className="bg-primary hover:bg-primary/90 text-white rounded-xl font-black uppercase tracking-widest px-8"
+              className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-black uppercase tracking-widest px-8 shadow-lg shadow-orange-500/25"
             >
               Add Thought
             </Button>

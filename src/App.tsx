@@ -22,6 +22,7 @@ import Products from "./pages/Products";
 import Documents from "./pages/Documents";
 import HRPolicy from "./pages/HRPolicy";
 import Ideas from "./pages/Ideas";
+import Thoughts from "./pages/Thoughts";
 import Holidays from "./pages/Holidays";
 import Birthday from "./pages/Birthday";
 import AccountSettings from "./pages/AccountSettings";
@@ -117,6 +118,7 @@ const AppRoutes = () => {
         {/* Miscellaneous */}
         <Route path="misc/hr-policy" element={<HRPolicy />} />
         <Route path="misc/ideas" element={<Ideas />} />
+        <Route path="misc/thoughts" element={<Thoughts />} />
         <Route path="misc/holidays" element={
           <ProtectedRoute adminOnly>
             <Holidays />

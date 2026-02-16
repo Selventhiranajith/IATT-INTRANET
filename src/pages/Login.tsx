@@ -33,8 +33,8 @@ const Login: React.FC = () => {
     try {
       const success = await login(email, password, branch);
       if (success) {
-        toast.success('Welcome back!', {
-          description: `Logged in to ${branch} branch.`,
+        toast.success(`Welcome, ${branch === 'Guindy' ? 'IAT Technologies' : branch === 'Nungambakkam' ? 'IAT Solutions' : 'back!'}`, {
+          description: `Successfully logged in to ${branch} branch.`,
         });
         navigate('/dashboard');
       } else {
@@ -64,7 +64,9 @@ const Login: React.FC = () => {
             <div className="w-20 h-20 mx-auto rounded-3xl bg-primary/10 flex items-center justify-center mb-6 shadow-sm border border-primary/5 p-4">
               <img src="/assets/favicon1.png" alt="IATT Logo" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-3xl font-black text-primary tracking-tight leading-none uppercase">IATT INTRANET</h1>
+            <h1 className="text-2xl font-black text-primary tracking-tight leading-none uppercase">
+              {branch === 'Guindy' ? 'IAT Technologies' : branch === 'Nungambakkam' ? 'IAT Solutions' : 'IATT INTRANET'}
+            </h1>
             <p className="text-slate-400 font-bold text-xs tracking-[0.3em] uppercase mt-2 opacity-80">Portal</p>
           </div>
 

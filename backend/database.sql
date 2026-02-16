@@ -44,6 +44,7 @@ VALUES (
     '1980-01-01'
 );
 
+
 -- Sample Admin (Guindy Branch)
 -- Password: admin123
 INSERT INTO users (employee_id, email, password, first_name, last_name, role, branch, department, position, status, birth_date) 
@@ -139,4 +140,30 @@ CREATE TABLE IF NOT EXISTS attendance_logs (
     INDEX idx_user_id (user_id),
     INDEX idx_date (date),
     INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Events Table
+CREATE TABLE IF NOT EXISTS events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    event_date DATE NOT NULL,
+    event_time VARCHAR(50),
+    location VARCHAR(255),
+    image_url VARCHAR(500),
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    INDEX idx_event_date (event_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Event Images Table
+CREATE TABLE IF NOT EXISTS event_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    INDEX idx_event_id (event_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
