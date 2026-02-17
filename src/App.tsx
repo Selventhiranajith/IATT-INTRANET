@@ -119,16 +119,8 @@ const AppRoutes = () => {
         <Route path="misc/hr-policy" element={<HRPolicy />} />
         <Route path="misc/ideas" element={<Ideas />} />
         <Route path="misc/thoughts" element={<Thoughts />} />
-        <Route path="misc/holidays" element={
-          <ProtectedRoute adminOnly>
-            <Holidays />
-          </ProtectedRoute>
-        } />
-        <Route path="misc/birthday" element={
-          <ProtectedRoute adminOnly>
-            <Birthday />
-          </ProtectedRoute>
-        } />
+        <Route path="misc/holidays" element={<Holidays />} />
+        <Route path="misc/birthday" element={<Birthday />} />
 
         {/* System Administration (SuperAdmin Only) */}
         <Route path="admin/users" element={

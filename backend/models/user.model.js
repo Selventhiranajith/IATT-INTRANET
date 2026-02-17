@@ -18,7 +18,7 @@ class User {
     static async findById(id) {
         try {
             const [rows] = await db.query(
-                'SELECT id, employee_id, email, first_name, last_name, role, branch, department, position, phone, status, last_login, created_at FROM users WHERE id = ? LIMIT 1',
+                'SELECT id, employee_id, email, first_name, last_name, role, branch, department, position, birth_date, phone, status, last_login, created_at FROM users WHERE id = ? LIMIT 1',
                 [id]
             );
             return rows[0] || null;

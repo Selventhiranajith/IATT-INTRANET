@@ -83,13 +83,13 @@ const menuItems: MenuItem[] = [
     label: 'Miscellaneous',
     icon: ScrollText,
     children: [
-      { label: 'Employee', icon: FileEdit, path: '/attendance/employee' },
+      { label: 'Employee', icon: FileEdit, path: '/attendance/employee', adminOnly: true },
       { label: 'Events', icon: PartyPopper, path: '/events' },
       { label: 'HR Policy', icon: ScrollText, path: '/misc/hr-policy' },
       { label: 'Ideas', icon: Lightbulb, path: '/misc/ideas' },
       { label: 'Thoughts', icon: Quote, path: '/misc/thoughts' },
-      { label: 'Holidays', icon: PartyPopper, path: '/misc/holidays', adminOnly: true },
-      { label: 'Birthday', icon: Cake, path: '/misc/birthday', adminOnly: true },
+      { label: 'Holidays', icon: PartyPopper, path: '/misc/holidays' },
+      { label: 'Birthday', icon: Cake, path: '/misc/birthday' },
     ]
   },
   {

@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth.routes');
 const attendanceRoutes = require('./routes/attendance.routes');
 const eventRoutes = require('./routes/event.routes');
 const thoughtRoutes = require('./routes/thought.routes');
+const holidayRoutes = require('./routes/holiday.routes');
 
 // Initialize express app
 const app = express();
@@ -47,6 +48,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/thoughts', thoughtRoutes);
+app.use('/api/holidays', holidayRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

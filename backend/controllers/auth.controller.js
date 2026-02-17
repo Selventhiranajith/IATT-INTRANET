@@ -321,3 +321,52 @@ exports.getAllUsers = async (req, res) => {
         });
     }
 };
+
+// Get birthdays (Public to all authenticated users)
+exports.getBirthdays = async (req, res) => {
+    try {
+        const currentUser = await User.findById(req.userId);
+
+        let filters = { status: 'active' };
+
+        // If not superadmin, restrict to their branch
+        if (currentUser.role !== 'superadmin' && currentUser.branch) {
+            filters.branch = currentUser.branch;
+        }
+
+        console.log(`Fetching birthdays for branch: ${filters.branch || 'ALL'}`);
+
+        // Fetch users based on filters
+        const users = await User.findAll(filters);
+        console.log(`Found ${users.length} users`);
+
+        // Filter and map to necessary fields
+        const birthdays = users
+            .filter(user => user.birth_date) // Ensure birth_date exists
+            .map(user => ({
+                id: user.id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                birth_date: user.birth_date,
+                department: user.department,
+                branch: user.branch,
+                email: user.email,
+                photo: user.photo
+            }));
+
+        res.status(200).json({
+            success: true,
+            data: {
+                users: birthdays
+            }
+        });
+
+    } catch (error) {
+        console.error('Get birthdays error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching birthdays',
+            error: error.message
+        });
+    }
+};

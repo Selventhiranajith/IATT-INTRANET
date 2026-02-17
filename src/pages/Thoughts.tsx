@@ -226,7 +226,7 @@ const ThoughtsPage: React.FC = () => {
                                     "{thought.content}"
                                 </p>
                                 <p className="text-orange-500 font-black text-sm">
-                                    - {thought.author}
+                                    – {thought.author}
                                 </p>
                                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
                                     <span className="text-primary font-black text-[10px] uppercase tracking-widest">

@@ -30,10 +30,7 @@ import {
   ScrollText,
   Lightbulb,
   Plus,
-  ShieldCheck,
-  Home,
-  Heart,
-  Award
+  ShieldCheck
 } from 'lucide-react';
 import {
   format,
@@ -121,27 +118,49 @@ const Dashboard: React.FC = () => {
   const [currentThought, setCurrentThought] = useState<any>(null);
   const [isLoadingThought, setIsLoadingThought] = useState(true);
 
-  // Fetch random thought for the user's branch
-  const fetchRandomThought = async () => {
-    if (!user?.branch) return;
-
+  // Fetch the most recent thought
+  const fetchRecentThought = async () => {
     setIsLoadingThought(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/thoughts/random/${user.branch}`, {
+      let url = '';
+
+      if (user?.branch) {
+        // Fetch thoughts for this branch (backend returns newest first)
+        url = `http://localhost:5000/api/thoughts/branch/${user.branch}`;
+      } else {
+        // Fallback for anyone without a branch (like superadmin)
+        url = `http://localhost:5000/api/thoughts/all`;
+      }
+
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await response.json();
-      if (data.success && data.data.thought) {
-        setCurrentThought(data.data.thought);
+
+      if (data.success && data.data.thoughts && data.data.thoughts.length > 0) {
+        // Select the very latest one
+        setCurrentThought(data.data.thoughts[0]);
       } else {
-        // Default thought if none found
-        setCurrentThought({
-          content: 'Success is not final, failure is not fatal: it is the courage to continue that counts.',
-          author: 'Winston Churchill'
+        // Fallback to a random one if the branch list is empty for some reason
+        const randomResponse = await fetch(`http://localhost:5000/api/thoughts/random/${user?.branch || 'all'}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
+        const randomData = await randomResponse.json();
+
+        if (randomData.success && randomData.data.thought) {
+          setCurrentThought(randomData.data.thought);
+        } else {
+          // Default thought
+          setCurrentThought({
+            content: 'Success is not final, failure is not fatal: it is the courage to continue that counts.',
+            author: 'Winston Churchill'
+          });
+        }
       }
     } catch (error) {
       console.error('Fetch thought error:', error);
@@ -179,7 +198,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchRecentMembers();
-    fetchRandomThought();
+    fetchRecentThought();
   }, [user?.branch]);
 
   // Carousel State
@@ -280,7 +299,7 @@ const Dashboard: React.FC = () => {
         setThoughtContent('');
         setThoughtAuthor('');
         // Refresh the thought display
-        fetchRandomThought();
+        fetchRecentThought();
       } else {
         toast.error(data.message || "Failed to create thought");
       }
@@ -701,11 +720,8 @@ const Dashboard: React.FC = () => {
           >
             <CarouselContent className="-ml-4">
               {[
-                { title: "Leave Policy", desc: "Guidelines for annual, sick, and casual leave eligibility and application process.", icon: Clock, color: "text-orange-500 bg-orange-50" },
-                { title: "Code of Conduct", desc: "Professional behavior expectations and ethical standards for all employees.", icon: ShieldCheck, color: "text-primary bg-primary/5" },
-                { title: "Remote Work", desc: "Policy detailing eligibility and requirements for working from home.", icon: Home, color: "text-emerald-500 bg-emerald-50" },
-                { title: "Health & Safety", desc: "Ensuring a safe working environment and emergency protocols.", icon: Heart, color: "text-red-500 bg-red-50" },
-                { title: "Performance", desc: "Standardized review process for career growth and appraisal.", icon: Award, color: "text-sky-500 bg-sky-50" }
+                { title: "Trainer-Trainee Relations Policy", desc: "Guidelines for professional conduct, equal opportunity, and conflict resolution.", icon: Users, color: "text-indigo-500 bg-indigo-50" },
+                { title: "Equal Opportunity Policy", desc: "Commitment to providing equal opportunities and maintaining a discrimination-free environment.", icon: ShieldCheck, color: "text-emerald-500 bg-emerald-50" }
               ].map((policy, i) => (
                 <CarouselItem key={i} className="pl-4 md:basis-1/2 lg:basis-1/4">
                   <div
