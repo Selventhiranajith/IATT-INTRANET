@@ -51,6 +51,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/thoughts', thoughtRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/ideas', ideaRoutes);
+app.use('/api/hr', require('./routes/hr.routes'));
 
 // Root endpoint
 app.get('/', (req, res) => {
