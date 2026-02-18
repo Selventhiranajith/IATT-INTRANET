@@ -8,7 +8,6 @@ import {
   Building2,
   Cake,
   Gift,
-  Edit3,
   Check,
   X,
   PartyPopper,
@@ -29,7 +28,6 @@ import {
   Factory,
   ScrollText,
   Lightbulb,
-  Plus,
   ShieldCheck
 } from 'lucide-react';
 import {
@@ -67,7 +65,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { eventsData } from '@/data/eventsData';
+// import { eventsData } from '@/data/eventsData';
 
 interface WidgetCardProps {
   title: string;
@@ -97,8 +95,8 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAdmin, isSuperAdmin } = useAuth();
-  const [isEditingThought, setIsEditingThought] = useState(false);
+  const { user, isSuperAdmin } = useAuth();
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -112,9 +110,16 @@ const Dashboard: React.FC = () => {
   const [recentMembers, setRecentMembers] = useState<any[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
 
+  // Events state
+  const [realEvents, setRealEvents] = useState<any[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+
+  // Birthdays state
+  const [birthdays, setBirthdays] = useState<any[]>([]);
+  const [isLoadingBirthdays, setIsLoadingBirthdays] = useState(true);
+
   // Thought state
-  const [thoughtContent, setThoughtContent] = useState('');
-  const [thoughtAuthor, setThoughtAuthor] = useState('');
+
   const [currentThought, setCurrentThought] = useState<any>(null);
   const [isLoadingThought, setIsLoadingThought] = useState(true);
 
@@ -176,18 +181,14 @@ const Dashboard: React.FC = () => {
   const fetchRecentMembers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/admin/users', {
+      const response = await fetch('http://localhost:5000/api/auth/recent-joined', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await response.json();
       if (data.success) {
-        // Sort by created_at descending and take top 5
-        const sorted = data.data.users
-          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 5);
-        setRecentMembers(sorted);
+        setRecentMembers(data.data.users);
       }
     } catch (error) {
       console.error('Fetch recent members error:', error);
@@ -196,9 +197,51 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const fetchRealEvents = async () => {
+    setIsLoadingEvents(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/events', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setRealEvents(data.data);
+      }
+    } catch (error) {
+      console.error('Fetch events error:', error);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
+  const fetchBirthdays = async () => {
+    setIsLoadingBirthdays(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/auth/birthdays', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setBirthdays(data.data.users);
+      }
+    } catch (error) {
+      console.error('Fetch birthdays error:', error);
+    } finally {
+      setIsLoadingBirthdays(false);
+    }
+  };
+
   useEffect(() => {
     fetchRecentMembers();
     fetchRecentThought();
+    fetchRealEvents();
+    fetchBirthdays();
   }, [user?.branch]);
 
   // Carousel State
@@ -218,7 +261,7 @@ const Dashboard: React.FC = () => {
     api.on("select", () => {
       setCurrent(api.selectedScrollSnap() + 1);
     });
-  }, [api]);
+  }, [api, realEvents]);
 
   // Calendar logic
   const monthStart = startOfMonth(currentDate);
@@ -235,79 +278,14 @@ const Dashboard: React.FC = () => {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const goToToday = () => setCurrentDate(new Date());
 
-  const events = [
-    { title: 'Quarterly Review Meeting', date: 'Feb 5, 2024', time: '10:00 AM' },
-    { title: 'Team Building Activity', date: 'Feb 12, 2024', time: '2:00 PM' },
-    { title: 'Product Launch', date: 'Feb 20, 2024', time: '9:00 AM' },
-  ];
-
-  const clientVisits = [
-    { name: 'Acme Corp', contact: 'John Smith', date: 'Feb 3, 2024' },
-    { name: 'TechGlobal Inc', contact: 'Sarah Lee', date: 'Feb 8, 2024' },
-  ];
-
-  const holidays = [
-    { name: 'President\'s Day', date: 'Feb 19, 2024' },
-    { name: 'Good Friday', date: 'Mar 29, 2024' },
-    { name: 'Memorial Day', date: 'May 27, 2024' },
-  ];
-
-  const todaysBirthdays = [
-    { name: 'Sarah Johnson', department: 'Marketing', avatar: 'SJ' },
-    { name: 'Mike Chen', department: 'Engineering', avatar: 'MC' },
-  ];
-
-  const upcomingBirthdays = [
-    { name: 'Emily Davis', date: 'Feb 5', department: 'HR' },
-    { name: 'Alex Thompson', date: 'Feb 12', department: 'Sales' },
-    { name: 'Lisa Wang', date: 'Feb 18', department: 'Design' },
-  ];
-
   const employeeStats = {
-    total: 156,
-    present: 142,
-    onLeave: 8,
-    remote: 6,
+    total: recentMembers.length,
+    present: recentMembers.length, // Placeholder logic since we don't have real-time attendance yet
+    onLeave: 0,
+    remote: 0,
   };
 
-  const saveThought = async () => {
-    if (!thoughtContent.trim() || !thoughtAuthor.trim()) {
-      toast.error("Please enter both content and author name");
-      return;
-    }
 
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/thoughts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          content: thoughtContent,
-          author: thoughtAuthor,
-          branch: user?.branch
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("Thought created successfully!");
-        setIsEditingThought(false);
-        setThoughtContent('');
-        setThoughtAuthor('');
-        // Refresh the thought display
-        fetchRecentThought();
-      } else {
-        toast.error(data.message || "Failed to create thought");
-      }
-    } catch (error) {
-      console.error('Create thought error:', error);
-      toast.error("Error creating thought");
-    }
-  };
 
   const saveEvent = () => {
     if (!newEvent.title || !newEvent.date) {
@@ -443,18 +421,7 @@ const Dashboard: React.FC = () => {
             )}
           </div>
 
-          {isAdmin && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditingThought(true);
-              }}
-              className="px-4 py-1.5 rounded-xl bg-orange-500 text-white font-black text-[10px] hover:bg-orange-600 transition-all flex items-center gap-1.5 mt-3 z-10"
-            >
-              <Plus className="w-3 h-3" />
-              Add Thought
-            </button>
-          )}
+
 
         </div>
       </div>
@@ -462,17 +429,10 @@ const Dashboard: React.FC = () => {
 
       {/* IATT Events Section */}
       <div className="bg-white rounded-[2.5rem] p-4 border border-slate-50 shadow-sm relative overflow-hidden">
-        <div className="flex items-center justify-between mb-10">
-          <h2 className="text-3xl font-black tracking-tight text-yellow-400">
+        <div className="flex items-center mb-10">
+          <h2 className="text-3xl font-black tracking-tight text-yellow-400 uppercase">
             IATT EVENT
           </h2>
-          <button
-            onClick={() => setIsAddingEvent(true)}
-            className="px-6 py-3 rounded-2xl bg-orange-500 text-white font-black text-sm hover:bg-orange-600 transition-all flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Event
-          </button>
         </div>
 
         <div className="relative px-12">
@@ -490,43 +450,65 @@ const Dashboard: React.FC = () => {
             className="w-full"
           >
             <CarouselContent className="-ml-4">
-              {eventsData.map((event, i) => (
-                <CarouselItem key={event.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                  <div
-                    onClick={() => navigate('/events')}
-                    className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all overflow-hidden group h-full flex flex-col cursor-pointer"
-                  >
-                    {/* Image */}
-                    <div className="h-48 overflow-hidden shrink-0">
-                      <img
-                        src={event.img}
-                        alt={event.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </div>
+              {isLoadingEvents ? (
+                <div className="w-full flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+                </div>
+              ) : realEvents.length > 0 ? (
+                realEvents.map((event, i) => (
+                  <CarouselItem key={event.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                    <div
+                      onClick={() => navigate('/events')}
+                      className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all overflow-hidden group h-full flex flex-col cursor-pointer"
+                    >
+                      {/* Image */}
+                      <div className="h-48 overflow-hidden shrink-0 bg-slate-100">
+                        {event.image_url ? (
+                          <img
+                            src={event.image_url}
+                            alt={event.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-300">
+                            <PartyPopper className="w-12 h-12" />
+                          </div>
+                        )}
+                      </div>
 
-                    {/* Content */}
-                    <div className="p-5 space-y-4 flex flex-col flex-1">
-                      <h3 className="text-slate-900 font-black text-lg leading-snug line-clamp-2">
-                        {event.title}
-                      </h3>
-                      <p className="text-slate-500 text-sm leading-relaxed line-clamp-3 mb-auto">
-                        {event.desc}
-                      </p>
+                      {/* Content */}
+                      <div className="p-5 space-y-4 flex flex-col flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-slate-900 font-black text-lg leading-snug line-clamp-2">
+                            {event.title}
+                          </h3>
+                          <span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-lg shrink-0">
+                            {format(new Date(event.event_date), 'MMM d')}
+                          </span>
+                        </div>
+                        <p className="text-slate-500 text-sm leading-relaxed line-clamp-3 mb-auto">
+                          {event.description}
+                        </p>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate('/events');
-                        }}
-                        className="text-orange-500 font-black text-sm hover:underline text-left pt-2"
-                      >
-                        Read More
-                      </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/events');
+                          }}
+                          className="text-orange-500 font-black text-sm hover:underline text-left pt-2"
+                        >
+                          Read More
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </CarouselItem>
-              ))}
+                  </CarouselItem>
+                ))
+              ) : (
+                <div className="w-full flex flex-col items-center justify-center py-20 text-slate-400">
+                  <PartyPopper className="w-12 h-12 mb-4 opacity-20" />
+                  <p className="font-bold">No events scheduled yet</p>
+                </div>
+              )}
             </CarouselContent>
             <CarouselPrevious className="hidden md:flex -left-4 bg-orange-500 text-white border-none hover:bg-orange-600 hover:text-white h-12 w-12 rounded-full shadow-lg transition-transform hover:scale-110" />
             <CarouselNext className="hidden md:flex -right-4 bg-orange-500 text-white border-none hover:bg-orange-600 hover:text-white h-12 w-12 rounded-full shadow-lg transition-transform hover:scale-110" />
@@ -573,9 +555,11 @@ const Dashboard: React.FC = () => {
                     <div className="flex flex-col gap-6">
                       <div className="flex items-center gap-6 pb-6 border-b border-slate-50">
                         <Avatar className="w-20 h-20 border-4 border-slate-50 shadow-sm transition-transform group-hover:scale-105">
-                          <AvatarImage src={`https://i.pravatar.cc/150?u=${member.id}`} />
+                          {member.photo && (
+                            <AvatarImage src={`http://localhost:5000${member.photo}`} />
+                          )}
                           <AvatarFallback className="bg-primary/10 text-primary font-black text-xl">
-                            {member.first_name[0]}
+                            {member.first_name[0]}{member.last_name[0]}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -627,28 +611,39 @@ const Dashboard: React.FC = () => {
             </div>
             <button className="text-[10px] font-black text-pink-500 uppercase tracking-widest hover:underline">View All</button>
           </div>
-          <div className="space-y-6 flex-1">
-            {[
-              { name: 'Sarah Ahmed', date: '21st Feb', department: 'Product Design', avatar: 'https://i.pravatar.cc/150?u=5' },
-              { name: 'Alex Thompson', date: '24th Feb', department: 'Marketing', avatar: 'https://i.pravatar.cc/150?u=8' },
-              { name: 'James Wilson', date: '2nd March', department: 'Engineering', avatar: 'https://i.pravatar.cc/150?u=8' },
-              { name: 'Lily Chen', date: '15th March', department: 'Human Resource', avatar: 'https://i.pravatar.cc/150?u=8' },
-            ].map((birthday, i) => (
-              <div key={i} className="flex items-center gap-4 group/item cursor-pointer">
-                <Avatar className="w-12 h-12 border-2 border-slate-50 shadow-sm group-hover/item:scale-110 transition-transform">
-                  <AvatarImage src={birthday.avatar} />
-                  <AvatarFallback className="bg-pink-50 text-pink-500 font-black text-sm">{birthday.name[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-slate-900 font-black text-sm tracking-tight truncate group-hover/item:text-pink-500 transition-colors">{birthday.name}</h4>
-                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-0.5">{birthday.department}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-slate-900 font-black text-xs tracking-tight leading-none">{birthday.date}</p>
-                  <p className="text-[8px] font-black text-pink-400 uppercase tracking-widest mt-1">Birthday</p>
-                </div>
+          <div className="space-y-6 flex-1 overflow-y-auto max-h-[350px] pr-2 custom-scrollbar">
+            {isLoadingBirthdays ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
+                <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Checking Dates...</p>
               </div>
-            ))}
+            ) : birthdays.length > 0 ? (
+              birthdays.map((birthday, i) => (
+                <div key={i} className="flex items-center gap-4 group/item cursor-pointer">
+                  <Avatar className="w-12 h-12 border-2 border-slate-50 shadow-sm group-hover/item:scale-110 transition-transform">
+                    {birthday.photo && (
+                      <AvatarImage src={`http://localhost:5000${birthday.photo}`} />
+                    )}
+                    <AvatarFallback className="bg-pink-50 text-pink-500 font-black text-sm">{birthday.first_name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-slate-900 font-black text-sm tracking-tight truncate group-hover/item:text-pink-500 transition-colors">{birthday.first_name} {birthday.last_name}</h4>
+                    <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-0.5">{birthday.department}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-slate-900 font-black text-xs tracking-tight leading-none">
+                      {format(new Date(birthday.birth_date), 'MMM d')}
+                    </p>
+                    <p className="text-[8px] font-black text-pink-400 uppercase tracking-widest mt-1">Birthday</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-center opacity-40">
+                <Cake className="w-8 h-8 text-slate-300 mb-2" />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">No upcoming birthdays</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -663,31 +658,15 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="space-y-6">
-              {[
-                { title: 'New Office Safety Guidelines', date: '2 hrs ago', tag: 'Important', color: 'text-red-500 bg-red-50' },
-                { title: 'Annual Team Retreat Planning', date: '5 hrs ago', tag: 'Events', color: 'text-sky-500 bg-sky-50' },
-                { title: 'Server Maintenance Schedule', date: '1 day ago', tag: 'System', color: 'text-orange-500 bg-orange-50' },
-                { title: 'Welcome New Team Members', date: '2 days ago', tag: 'HR', color: 'text-emerald-500 bg-emerald-50' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-4 group cursor-pointer">
-                  <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-colors", item.color)}>
-                    <Bell className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-slate-900 font-bold text-sm leading-snug group-hover:text-primary transition-colors truncate">{item.title}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{item.date}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300" />
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{item.tag}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+                <Bell className="w-8 h-8 text-slate-300 mb-2" />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">No new announcements</p>
+              </div>
             </div>
           </div>
 
-          <button className="w-full mt-8 py-4 rounded-2xl bg-slate-50 text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-100 hover:text-primary transition-all">
-            View All Announcements
+          <button disabled className="w-full mt-8 py-4 rounded-2xl bg-slate-50 text-slate-300 font-black text-xs uppercase tracking-widest cursor-not-allowed">
+            No More Announcements
           </button>
         </div>
       </div>
@@ -723,25 +702,25 @@ const Dashboard: React.FC = () => {
                 { title: "Trainer-Trainee Relations Policy", desc: "Guidelines for professional conduct, equal opportunity, and conflict resolution.", icon: Users, color: "text-indigo-500 bg-indigo-50" },
                 { title: "Equal Opportunity Policy", desc: "Commitment to providing equal opportunities and maintaining a discrimination-free environment.", icon: ShieldCheck, color: "text-emerald-500 bg-emerald-50" }
               ].map((policy, i) => (
-                <CarouselItem key={i} className="pl-4 md:basis-1/2 lg:basis-1/4">
+                <CarouselItem key={i} className="pl-4 md:basis-1/2 lg:basis-1/2">
                   <div
                     onClick={() => navigate('/misc/hr-policy')}
-                    className="bg-slate-50/50 rounded-[2.2rem] border border-slate-100 p-8 h-full flex flex-col gap-6 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
+                    className="bg-slate-50/50 rounded-[2rem] border border-slate-100 p-6 h-full flex items-center gap-6 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
                   >
-                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", policy.color)}>
-                      <policy.icon className="w-7 h-7" />
+                    <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 shadow-sm", policy.color)}>
+                      <policy.icon className="w-8 h-8" />
                     </div>
-                    <div>
-                      <h3 className="text-slate-900 font-black text-lg tracking-tight mb-2 group-hover:text-primary transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-slate-900 font-black text-sm tracking-tight mb-1 group-hover:text-primary transition-colors truncate">
                         {policy.title}
                       </h3>
-                      <p className="text-slate-500 text-xs leading-relaxed font-medium">
+                      <p className="text-slate-500 text-[10px] leading-relaxed font-medium line-clamp-2">
                         {policy.desc}
                       </p>
-                    </div>
-                    <div className="mt-auto flex items-center text-[10px] font-black text-indigo-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
-                      View Details
-                      <ChevronRight className="w-3 h-3 ml-1" />
+                      <div className="mt-2 flex items-center text-[8px] font-black text-indigo-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
+                        View Details
+                        <ChevronRight className="w-3 h-3 ml-1" />
+                      </div>
                     </div>
                   </div>
                 </CarouselItem>
@@ -762,54 +741,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Edit Thought Modal */}
-      <Dialog open={isEditingThought} onOpenChange={setIsEditingThought}>
-        <DialogContent className="sm:max-w-[525px] rounded-[2rem] border-none shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add Thought of the Day</DialogTitle>
-            <p className="text-slate-500 font-medium text-sm mt-2">Share an inspiring thought with your team</p>
-          </DialogHeader>
-          <div className="py-6 space-y-6">
-            <div className="space-y-2">
-              <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Content</Label>
-              <Textarea
-                placeholder="Enter the inspiring thought or quote..."
-                value={thoughtContent}
-                onChange={(e) => setThoughtContent(e.target.value)}
-                className="min-h-[120px] rounded-xl border-slate-100 focus:border-orange-500/20 focus:ring-orange-500/10 font-medium text-base p-4 resize-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Author Name</Label>
-              <Input
-                placeholder="e.g., Winston Churchill"
-                value={thoughtAuthor}
-                onChange={(e) => setThoughtAuthor(e.target.value)}
-                className="rounded-xl h-12 border-slate-100 focus:border-orange-500/20 focus:ring-orange-500/10 font-medium"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-3">
-            <Button
-              onClick={() => {
-                setIsEditingThought(false);
-                setThoughtContent('');
-                setThoughtAuthor('');
-              }}
-              variant="outline"
-              className="rounded-xl font-bold border-slate-100 text-slate-500 hover:bg-slate-50"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={saveThought}
-              className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-black uppercase tracking-widest px-8 shadow-lg shadow-orange-500/25"
-            >
-              Add Thought
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
       <AddEventModal
         isOpen={isAddingEvent}
         onClose={() => setIsAddingEvent(false)}

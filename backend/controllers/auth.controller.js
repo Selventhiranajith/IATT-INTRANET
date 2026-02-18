@@ -370,3 +370,50 @@ exports.getBirthdays = async (req, res) => {
         });
     }
 };
+
+// Get recently joined members (Public to all authenticated users)
+exports.getRecentJoined = async (req, res) => {
+    try {
+        const currentUser = await User.findById(req.userId);
+
+        let filters = { status: 'active' };
+
+        // If not superadmin, restrict to their branch
+        if (currentUser.role !== 'superadmin' && currentUser.branch) {
+            filters.branch = currentUser.branch;
+        }
+
+        console.log(`Fetching recent members for branch: ${filters.branch || 'ALL'}`);
+
+        // Fetch users (the User.findAll already sorts by created_at DESC)
+        const users = await User.findAll(filters);
+
+        // Take only the top 10 most recent
+        const recentUsers = users.slice(0, 10).map(user => ({
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            position: user.position,
+            department: user.department,
+            branch: user.branch,
+            email: user.email,
+            photo: user.photo,
+            created_at: user.created_at
+        }));
+
+        res.status(200).json({
+            success: true,
+            data: {
+                users: recentUsers
+            }
+        });
+
+    } catch (error) {
+        console.error('Get recent joined error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching recent members',
+            error: error.message
+        });
+    }
+};

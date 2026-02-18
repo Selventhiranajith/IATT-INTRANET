@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Clock, Plus, Loader2, Trash2, X, Upload, Edit3 } from 'lucide-react';
+import { Calendar, MapPin, Clock, Plus, Loader2, Trash2, X, Upload, Edit3, Video, Play, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ interface EventImage {
   id: number;
   url: string;
   full_url: string;
+  type: 'image' | 'video';
 }
 
 interface Event {
@@ -23,6 +24,7 @@ interface Event {
   event_time: string;
   location: string;
   image_url: string;
+  image_type?: 'image' | 'video';
   created_by: number;
   images?: EventImage[];
   images_full?: string[]; // For backward compat/simple use
@@ -48,7 +50,8 @@ const Events: React.FC = () => {
 
   // File Upload State
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [filePreviews, setFilePreviews] = useState<{ url: string, type: 'image' | 'video' }[]>([]);
+  const [coverIndex, setCoverIndex] = useState<number>(0);
 
   // Gallery View State
   const [selectedEventImages, setSelectedEventImages] = useState<string[] | null>(null);
@@ -87,23 +90,28 @@ const Events: React.FC = () => {
 
       // Validate max files (e.g., 10 including existing? Let's say 10 new files per upload)
       if (selectedFiles.length + newFiles.length > 10) {
-        toast.error('You can only upload up to 10 new images at a time.');
+        toast.error('You can only upload up to 10 new files at a time.');
         return;
       }
 
       setSelectedFiles(prev => [...prev, ...newFiles]);
 
       // Create previews
-      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
-      setImagePreviews(prev => [...prev, ...newPreviews]);
+      const newPreviews = newFiles.map(file => ({
+        url: URL.createObjectURL(file),
+        type: file.type.startsWith('video') ? 'video' : 'image' as 'image' | 'video'
+      }));
+      setFilePreviews(prev => [...prev, ...newPreviews]);
     }
   };
 
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
     // Revoke URL to avoid memory leak
-    URL.revokeObjectURL(imagePreviews[index]);
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    URL.revokeObjectURL(filePreviews[index].url);
+    setFilePreviews(prev => prev.filter((_, i) => i !== index));
+    if (coverIndex === index) setCoverIndex(0);
+    if (coverIndex > index) setCoverIndex(prev => prev - 1);
   };
 
   const handleDeleteExistingImage = async (imageId: number) => {
@@ -148,9 +156,11 @@ const Events: React.FC = () => {
       formData.append('location', newItem.location);
 
       // Append files
-      selectedFiles.forEach(file => {
+      selectedFiles.forEach((file, index) => {
         formData.append('images', file);
       });
+      // Send cover index
+      formData.append('cover_index', coverIndex.toString());
 
       const response = await fetch('http://localhost:5000/api/events', {
         method: 'POST',
@@ -256,7 +266,8 @@ const Events: React.FC = () => {
       location: ''
     });
     setSelectedFiles([]);
-    setImagePreviews([]);
+    setFilePreviews([]);
+    setCoverIndex(0);
     setCurrentEvent(null);
   };
 
@@ -271,7 +282,7 @@ const Events: React.FC = () => {
     });
     // For edit modal, we start with no *new* files selected
     setSelectedFiles([]);
-    setImagePreviews([]);
+    setFilePreviews([]);
     setIsEditModalOpen(true);
   };
 
@@ -284,7 +295,7 @@ const Events: React.FC = () => {
   // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
-      imagePreviews.forEach(url => URL.revokeObjectURL(url));
+      filePreviews.forEach(preview => URL.revokeObjectURL(preview.url));
     };
   }, []);
 
@@ -363,12 +374,23 @@ const Events: React.FC = () => {
                 <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors z-10 duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10 opacity-80" />
 
-                <img
-                  src={event.image_url ? (event.image_url.startsWith('http') ? event.image_url : `http://localhost:5000${event.image_url}`) : undefined}
-                  alt={event.title}
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${!event.image_url ? 'hidden' : ''}`}
-                />
+                {(event.image_type === 'video' || event.image_url?.endsWith('.mp4') || event.image_url?.endsWith('.webm')) ? (
+                  <video
+                    src={event.image_url ? (event.image_url.startsWith('http') ? event.image_url : `http://localhost:5000${event.image_url}`) : undefined}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    muted
+                    loop
+                    onMouseOver={e => e.currentTarget.play()}
+                    onMouseOut={e => e.currentTarget.pause()}
+                  />
+                ) : (
+                  <img
+                    src={event.image_url ? (event.image_url.startsWith('http') ? event.image_url : `http://localhost:5000${event.image_url}`) : undefined}
+                    alt={event.title}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${!event.image_url ? 'hidden' : ''}`}
+                  />
+                )}
 
                 {!event.image_url && (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-300">
@@ -551,14 +573,47 @@ const Events: React.FC = () => {
               <div className="space-y-3 md:col-span-2">
                 <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Event Imagery (Max 10)</Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {imagePreviews.map((src, index) => (
-                    <div key={index} className="relative aspect-square rounded-2xl overflow-hidden group shadow-md">
-                      <img src={src} alt="Preview" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  {filePreviews.map((preview, index) => (
+                    <div
+                      key={index}
+                      className={`relative aspect-square rounded-2xl overflow-hidden group shadow-md transition-all cursor-pointer ${coverIndex === index ? 'ring-2 ring-orange-500 ring-offset-2' : ''}`}
+                      onClick={() => setCoverIndex(index)}
+                    >
+                      {preview.type === 'video' ? (
+                        <video src={preview.url} className="w-full h-full object-cover" />
+                      ) : (
+                        <img src={preview.url} alt="Preview" className="w-full h-full object-cover" />
+                      )}
+
+                      {/* Cover Indicator */}
+                      {coverIndex === index && (
+                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500 text-white text-[10px] font-bold uppercase rounded-md shadow-sm z-10">
+                          Cover
+                        </div>
+                      )}
+
+                      {/* Type Indicator */}
+                      {preview.type === 'video' && (
+                        <div className="absolute bottom-2 left-2 p-1.5 bg-black/50 text-white rounded-lg backdrop-blur-sm">
+                          <Video className="w-3 h-3" />
+                        </div>
+                      )}
+
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        {coverIndex !== index && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setCoverIndex(index); }}
+                            className="p-2 bg-white/20 hover:bg-white text-white hover:text-orange-500 rounded-full transition-colors backdrop-blur-sm"
+                            title="Set as Cover"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => removeFile(index)}
-                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                          onClick={(e) => { e.stopPropagation(); removeFile(index); }}
+                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -572,10 +627,11 @@ const Events: React.FC = () => {
                         <Upload className="w-5 h-5" />
                       </div>
                       <span className="text-[10px] font-bold text-slate-400 group-hover:text-orange-500 uppercase tracking-wide">Upload</span>
-                      <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+                      <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
                     </label>
                   )}
                 </div>
+                <p className="text-[10px] text-slate-400 font-medium ml-1">* Click on an image to set it as the cover.</p>
               </div>
             </div>
 
@@ -691,11 +747,15 @@ const Events: React.FC = () => {
 
                 {/* New Uploads */}
                 <div className="space-y-2 mt-4">
-                  <span className="text-xs font-medium text-slate-400">Add New Images</span>
+                  <span className="text-xs font-medium text-slate-400">Add New Files</span>
                   <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-                    {imagePreviews.map((src, index) => (
+                    {filePreviews.map((preview, index) => (
                       <div key={index} className="relative aspect-square rounded-xl overflow-hidden group shadow-sm">
-                        <img src={src} alt="Preview" className="w-full h-full object-cover" />
+                        {preview.type === 'video' ? (
+                          <video src={preview.url} className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={preview.url} alt="Preview" className="w-full h-full object-cover" />
+                        )}
                         <button
                           type="button"
                           onClick={() => removeFile(index)}
@@ -710,7 +770,7 @@ const Events: React.FC = () => {
                       <label className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition-all group">
                         <Plus className="w-5 h-5 text-slate-300 group-hover:text-orange-500 mb-1" />
                         <span className="text-[10px] font-bold text-slate-400 group-hover:text-orange-500 uppercase">Add</span>
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+                        <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
                       </label>
                     )}
                   </div>
@@ -750,13 +810,21 @@ const Events: React.FC = () => {
                   key={idx}
                   className="group relative rounded-3xl overflow-hidden shadow-2xl bg-slate-900 aspect-[4/3] ring-1 ring-white/10"
                 >
-                  <img
-                    src={img.startsWith('http') || img.startsWith('blob:') ? img : `http://localhost:5000${img}`}
-                    alt={`Event photo ${idx + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                    <span className="text-white font-medium text-sm">Image {idx + 1}</span>
+                  {(img.toLowerCase().endsWith('.mp4') || img.toLowerCase().endsWith('.webm') || img.toLowerCase().endsWith('.mov')) ? (
+                    <video
+                      src={img.startsWith('http') || img.startsWith('blob:') ? img : `http://localhost:5000${img}`}
+                      controls
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <img
+                      src={img.startsWith('http') || img.startsWith('blob:') ? img : `http://localhost:5000${img}`}
+                      alt={`Event media ${idx + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 pointer-events-none">
+                    <span className="text-white font-medium text-sm">Media {idx + 1}</span>
                   </div>
                 </div>
               ))}

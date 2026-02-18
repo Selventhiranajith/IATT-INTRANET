@@ -10,6 +10,7 @@ router.post('/login', authController.login);
 // Protected routes (require authentication)
 router.get('/me', authMiddleware.verifyToken, authController.getCurrentUser);
 router.get('/birthdays', authMiddleware.verifyToken, authController.getBirthdays);
+router.get('/recent-joined', authMiddleware.verifyToken, authController.getRecentJoined);
 router.post('/logout', authMiddleware.verifyToken, authController.logout);
 router.post('/change-password', authMiddleware.verifyToken, authController.changePassword);
 

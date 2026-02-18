@@ -27,42 +27,67 @@ exports.createEvent = async (req, res) => {
                 // But for now let's store /uploads/filename so it's portable
                 return `/uploads/${file.filename}`;
             });
-            primaryImage = imageUrls[0];
+            // Determine cover image based on user selection or default to first
+            let coverIndex = parseInt(req.body.cover_index) || 0;
+            if (coverIndex < 0 || coverIndex >= imageUrls.length) coverIndex = 0;
+
+            primaryImage = imageUrls.length > 0 ? imageUrls[coverIndex] : '';
+
+            // If no file uploaded, check if image_url was sent manually (legacy support)
+            if (!primaryImage && req.body.image_url) {
+                primaryImage = req.body.image_url;
+                imageUrls.push(primaryImage);
+            }
+
+            const eventId = await Event.create({
+                title,
+                description,
+                event_date,
+                event_time,
+                location,
+                image_url: primaryImage, // Set primary cover
+                created_by,
+                image_type: primaryImage ? (primaryImage.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image') : 'image'
+            });
+
+            // Add all images to event_images table
+            if (imageUrls.length > 0) {
+                await Event.addImages(eventId, imageUrls);
+            }
+
+            res.status(201).json({
+                success: true,
+                message: 'Event created successfully!',
+                data: { id: eventId, images: imageUrls }
+            });
+
+        } else {
+            // No files uploaded, but maybe legacy image_url?
+            // If no file uploaded, check if image_url was sent manually (legacy support)
+            let primaryImage = '';
+            let imageUrls = [];
+            if (req.body.image_url) {
+                primaryImage = req.body.image_url;
+                imageUrls.push(primaryImage);
+            }
+
+            const eventId = await Event.create({
+                title,
+                description,
+                event_date,
+                event_time,
+                location,
+                image_url: primaryImage, // Set primary cover
+                created_by,
+                image_type: primaryImage ? (primaryImage.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image') : 'image'
+            });
+
+            res.status(201).json({
+                success: true,
+                message: 'Event created successfully!',
+                data: { id: eventId, images: imageUrls }
+            });
         }
-
-        // If no file uploaded, check if image_url was sent manually (legacy support)
-        if (!primaryImage && req.body.image_url) {
-            primaryImage = req.body.image_url;
-            imageUrls.push(primaryImage);
-        }
-
-        const eventId = await Event.create({
-            title,
-            description,
-            event_date,
-            event_time,
-            location,
-            image_url: primaryImage, // Set primary cover
-            created_by
-        });
-
-        // Add all images to event_images table
-        if (imageUrls.length > 0) {
-
-            // Reformat to bulk insert: [[eventId, url], [eventId, url]]
-            // But addImages method takes [url1, url2] and reformats internally?
-            // Let's check addImages implementation in model...
-            // It takes (eventId, imageUrls) where imageUrls is array of strings. 
-            // It reformats to [[id, url], [id, url]]. Correct.
-
-            await Event.addImages(eventId, imageUrls);
-        }
-
-        res.status(201).json({
-            success: true,
-            message: 'Event created successfully!',
-            data: { id: eventId, images: imageUrls }
-        });
 
     } catch (error) {
         console.error('Create event error:', error);
@@ -91,7 +116,8 @@ exports.getAllEvents = async (req, res) => {
                 // Ensure image_url is fully qualified if relative
                 image_url: event.image_url ? (event.image_url.startsWith('http') ? event.image_url : `http://localhost:5000${event.image_url}`) : null,
                 // Also format the images array with full URLs
-                images_full: uniqueImages.map(img => img.startsWith('http') ? img : `http://localhost:5000${img}`)
+                images_full: uniqueImages.map(img => img.startsWith('http') ? img : `http://localhost:5000${img}`),
+                image_type: event.image_url ? (event.image_url.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image') : 'image'
             };
         });
 
@@ -160,9 +186,19 @@ exports.updateEvent = async (req, res) => {
 
         // Handle new uploaded images if any
         if (files && files.length > 0) {
-            const imageUrls = files.map(file => `/uploads/${file.filename}`);
-            // If new images uploaded, set the first one as the main cover image
-            updateData.image_url = imageUrls[0];
+            let imageUrls = files.map(file => `/uploads/${file.filename}`);
+
+            // Determine if cover index refers to a new image
+            if (req.body.cover_index !== undefined) {
+                const coverIndex = parseInt(req.body.cover_index);
+                if (coverIndex >= 0 && coverIndex < imageUrls.length) {
+                    updateData.image_url = imageUrls[coverIndex];
+                } else {
+                    updateData.image_url = imageUrls[0];
+                }
+            } else {
+                updateData.image_url = imageUrls[0];
+            }
 
             // Add all new images to the galleries
             await Event.addImages(id, imageUrls);

@@ -1,77 +1,265 @@
-import React, { useState } from 'react';
-import { Lightbulb, Send, ThumbsUp, MessageCircle, Clock, Plus, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lightbulb, Send, ThumbsUp, MessageCircle, Clock, Plus, X, Trash2, Edit2, User, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+
+interface Comment {
+  id: number;
+  user_id: number;
+  idea_id: number;
+  comment: string;
+  created_at: string;
+  first_name: string;
+  last_name: string;
+  photo?: string;
+  position?: string;
+}
 
 interface Idea {
-  id: string;
+  id: number;
+  user_id: number;
   title: string;
-  description: string;
-  author: string;
-  department: string;
-  date: string;
-  votes: number;
-  comments: number;
-  status: 'new' | 'under-review' | 'implemented' | 'archived';
-  voted?: boolean;
+  content: string;
+  created_at: string;
+  first_name: string;
+  last_name: string;
+  position?: string;
+  likes_count: number;
+  comments_count: number;
+  is_liked: boolean; // boolean (0 or 1 from backend)
+  comments?: Comment[];
 }
 
 const Ideas: React.FC = () => {
   const { user } = useAuth();
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [newIdea, setNewIdea] = useState({ title: '', description: '', category: '' });
-  const [ideas, setIdeas] = useState<Idea[]>([
-    { id: '1', title: 'Flexible Work Hours', description: 'Allow employees to choose their working hours within a core window of 10 AM to 4 PM.', author: 'John Doe', department: 'Engineering', date: 'Jan 28, 2024', votes: 24, comments: 8, status: 'under-review' },
-    { id: '2', title: 'Monthly Learning Sessions', description: 'Organize monthly sessions where team members share knowledge on various topics.', author: 'Sarah Johnson', department: 'HR', date: 'Jan 25, 2024', votes: 18, comments: 5, status: 'implemented' },
-    { id: '3', title: 'Green Office Initiative', description: 'Implement eco-friendly practices like recycling stations and reducing paper usage.', author: 'Mike Chen', department: 'Operations', date: 'Jan 22, 2024', votes: 31, comments: 12, status: 'new' },
-    { id: '4', title: 'Wellness Program', description: 'Introduce a comprehensive wellness program including gym memberships and mental health support.', author: 'Emily Davis', department: 'HR', date: 'Jan 20, 2024', votes: 42, comments: 15, status: 'under-review' },
-  ]);
+  const [newIdea, setNewIdea] = useState({ title: '', content: '' });
+  const [editingIdea, setEditingIdea] = useState<Idea | null>(null);
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      new: 'bg-orange-500/20 text-orange-300 border-orange-400/30',
-      'under-review': 'bg-amber-500/20 text-amber-300 border-amber-400/30',
-      implemented: 'bg-green-500/20 text-green-300 border-green-400/30',
-      archived: 'bg-white/10 text-white/50 border-white/20',
-    };
-    return styles[status] || 'bg-white/10 text-white/60';
-  };
+  // Comment state
+  const [expandedIdeaId, setExpandedIdeaId] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
 
-  const handleVote = (ideaId: string) => {
-    setIdeas(ideas.map(idea => {
-      if (idea.id === ideaId) {
-        return {
-          ...idea,
-          votes: idea.voted ? idea.votes - 1 : idea.votes + 1,
-          voted: !idea.voted,
-        };
+  const fetchIdeas = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/ideas', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Convert is_liked from 0/1 to boolean if needed, though JS handles truthy/falsy
+        setIdeas(data.data);
       }
-      return idea;
-    }));
+    } catch (error) {
+      console.error('Fetch ideas error:', error);
+      toast.error("Failed to load ideas");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchIdeas();
+  }, []);
+
+  const handleVote = async (ideaId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/ideas/${ideaId}/like`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setIdeas(ideas.map(idea => {
+          if (idea.id === ideaId) {
+            const wasLiked = idea.is_liked;
+            const newLiked = data.data.liked;
+            return {
+              ...idea,
+              is_liked: newLiked,
+              likes_count: newLiked ? idea.likes_count + 1 : Math.max(0, idea.likes_count - 1)
+            };
+          }
+          return idea;
+        }));
+      }
+    } catch (error) {
+      toast.error("Failed to vote");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newIdea.title || !newIdea.description) return;
+    if (!newIdea.title || !newIdea.content) return;
 
-    const idea: Idea = {
-      id: String(ideas.length + 1),
-      title: newIdea.title,
-      description: newIdea.description,
-      author: user?.name || 'Anonymous',
-      department: user?.department || 'General',
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      votes: 0,
-      comments: 0,
-      status: 'new',
-    };
+    try {
+      const token = localStorage.getItem('token');
+      const url = editingIdea
+        ? `http://localhost:5000/api/ideas/${editingIdea.id}`
+        : 'http://localhost:5000/api/ideas';
 
-    setIdeas([idea, ...ideas]);
-    setNewIdea({ title: '', description: '', category: '' });
-    setShowForm(false);
-    toast.success('Idea Submitted!', {
-      description: 'Your idea has been submitted for review.',
-    });
+      const method = editingIdea ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newIdea)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(editingIdea ? 'Idea updated successfully!' : 'Idea submitted successfully!');
+        setNewIdea({ title: '', content: '' });
+        setShowForm(false);
+        setEditingIdea(null);
+        fetchIdeas();
+      } else {
+        toast.error(data.message || "Failed to submit idea");
+      }
+    } catch (error) {
+      console.error('Submit idea error:', error);
+      toast.error("Error submitting idea");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this idea?")) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/ideas/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Idea deleted successfully");
+        setIdeas(ideas.filter(i => i.id !== id));
+      } else {
+        toast.error(data.message || "Failed to delete idea");
+      }
+    } catch (error) {
+      toast.error("Error deleting idea");
+    }
+  };
+
+  const openEditModal = (idea: Idea) => {
+    setEditingIdea(idea);
+    setNewIdea({ title: idea.title, content: idea.content });
+    setShowForm(true);
+  };
+
+  const toggleComments = async (ideaId: number) => {
+    if (expandedIdeaId === ideaId) {
+      setExpandedIdeaId(null);
+      return;
+    }
+
+    setExpandedIdeaId(ideaId);
+    setLoadingComments(true);
+
+    // Fetch details including comments
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/ideas/${ideaId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIdeas(ideas.map(i => i.id === ideaId ? { ...i, comments: data.data.comments } : i));
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleAddComment = async (ideaId: number) => {
+    if (!commentText.trim()) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/ideas/${ideaId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ comment: commentText })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        const newComment = data.data;
+        setIdeas(ideas.map(i => {
+          if (i.id === ideaId) {
+            return {
+              ...i,
+              comments: [...(i.comments || []), newComment],
+              comments_count: i.comments_count + 1
+            };
+          }
+          return i;
+        }));
+        setCommentText('');
+        toast.success("Comment added");
+      }
+    } catch (error) {
+      toast.error("Failed to add comment");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number, ideaId: number) => {
+    if (!confirm("Delete this comment?")) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/ideas/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIdeas(ideas.map(i => {
+          if (i.id === ideaId) {
+            return {
+              ...i,
+              comments: i.comments?.filter(c => c.id !== commentId),
+              comments_count: Math.max(0, i.comments_count - 1)
+            };
+          }
+          return i;
+        }));
+        toast.success("Comment deleted");
+      }
+    } catch (error) {
+      toast.error("Error deleting comment");
+    }
   };
 
   return (
@@ -84,147 +272,256 @@ const Ideas: React.FC = () => {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Ideas Hub</h1>
-            <p className="text-slate-500 font-medium mt-1">Share your ideas to improve our workplace</p>
+            <p className="text-slate-500 font-medium mt-1">Share and discuss ideas to improve our workplace</p>
           </div>
         </div>
-        <button 
-          onClick={() => setShowForm(true)}
-          className="px-8 py-4 bg-primary text-white rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center gap-3 font-black uppercase tracking-[0.2em] text-sm"
+        <button
+          onClick={() => {
+            setEditingIdea(null);
+            setNewIdea({ title: '', content: '' });
+            setShowForm(true);
+          }}
+          className="px-8 py-4 bg-amber-500 text-white rounded-2xl shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center gap-3 font-black uppercase tracking-[0.2em] text-sm"
         >
           <Plus className="w-5 h-5" />
           Submit Idea
         </button>
       </div>
 
-      {/* Idea Submission Form */}
-      {showForm && (
-        <div className="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-2xl shadow-slate-200/50">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-               <div className="p-3 bg-amber-50 rounded-xl shadow-sm">
-                 <Lightbulb className="w-6 h-6 text-amber-500" />
-               </div>
-               <h2 className="text-2xl font-black text-slate-900 tracking-tight">Submit Your Idea</h2>
-            </div>
-            <button 
-              onClick={() => setShowForm(false)}
-              className="p-3 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"
-            >
-              <X className="w-6 h-6" />
-            </button>
+      {/* Idea Submission/Edit Dialog */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="sm:max-w-[600px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
+          <div className="p-8 bg-slate-50 border-b border-slate-100/50">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                <div className="p-2.5 bg-amber-100/50 rounded-xl text-amber-600">
+                  <Lightbulb className="w-6 h-6" />
+                </div>
+                {editingIdea ? 'Edit Your Idea' : 'Submit New Idea'}
+              </DialogTitle>
+              <p className="text-slate-500 font-medium ml-[3.25rem]">
+                {editingIdea ? 'Update your idea details below' : 'Share your innovative thoughts with the team'}
+              </p>
+            </DialogHeader>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="p-8 space-y-6">
             <div className="space-y-2">
-              <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Title</label>
-              <input
-                type="text"
+              <Label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Idea Title</Label>
+              <Input
                 value={newIdea.title}
                 onChange={(e) => setNewIdea({ ...newIdea, title: e.target.value })}
-                placeholder="Give your idea a catchy title"
-                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 placeholder:text-slate-400 font-bold focus:outline-none focus:bg-white focus:border-primary/20 transition-all"
-                required
+                placeholder="Give your idea a catchy title..."
+                className="h-14 rounded-2xl bg-slate-50 border-slate-100 font-bold text-lg focus:ring-amber-500/20 focus:border-amber-500/50"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Description</label>
-              <textarea
-                value={newIdea.description}
-                onChange={(e) => setNewIdea({ ...newIdea, description: e.target.value })}
-                placeholder="Describe your idea in detail..."
-                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 placeholder:text-slate-400 font-bold focus:outline-none focus:bg-white focus:border-primary/20 transition-all resize-none"
-                rows={4}
-                required
-              />
-            </div>
-            <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-3 font-black uppercase tracking-[0.2em] text-sm">
-              <Send className="w-5 h-5" />
-              Submit My Idea
-            </button>
-          </form>
-        </div>
-      )}
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-        {[
-          { label: 'Total Ideas', value: ideas.length, icon: Lightbulb, color: 'text-amber-500', bg: 'bg-amber-50' },
-          { label: 'Under Review', value: ideas.filter(i => i.status === 'under-review').length, icon: Clock, color: 'text-sky-500', bg: 'bg-sky-50' },
-          { label: 'Implemented', value: ideas.filter(i => i.status === 'implemented').length, icon: Send, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-          { label: 'Total Votes', value: ideas.reduce((sum, i) => sum + i.votes, 0), icon: ThumbsUp, color: 'text-primary', bg: 'bg-primary/5' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm hover:shadow-md transition-all group">
-            <div className="flex items-center gap-6">
-              <div className={`w-14 h-14 rounded-2xl ${stat.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
-                <stat.icon className={`w-6 h-6 ${stat.color}`} />
-              </div>
-              <div className="flex flex-col">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                <span className="text-3xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</span>
-              </div>
+            <div className="space-y-2">
+              <Label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Detailed Description</Label>
+              <Textarea
+                value={newIdea.content}
+                onChange={(e) => setNewIdea({ ...newIdea, content: e.target.value })}
+                placeholder="Describe your idea in detail. What problem does it solve? How does it help?"
+                className="min-h-[150px] rounded-2xl bg-slate-50 border-slate-100 font-medium text-base leading-relaxed focus:ring-amber-500/20 focus:border-amber-500/50 resize-none p-4"
+              />
             </div>
           </div>
-        ))}
-      </div>
+
+          <DialogFooter className="p-8 pt-0 gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setShowForm(false)}
+              className="rounded-xl font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black uppercase tracking-widest px-8 shadow-lg shadow-amber-500/20"
+            >
+              {editingIdea ? 'Save Changes' : 'Submit Idea'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Ideas Feed */}
-      <div className="space-y-8">
-        {ideas.map((idea) => (
-          <div key={idea.id} className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
-            <div className="flex flex-col md:flex-row md:items-start gap-8">
-              {/* Vote Button */}
-              <button 
-                onClick={() => handleVote(idea.id)}
-                className={`flex flex-col items-center p-4 rounded-2xl transition-all shrink-0 w-20 ${
-                  idea.voted 
-                    ? 'bg-primary text-white shadow-lg shadow-primary/25' 
-                    : 'bg-slate-50 text-slate-400 hover:text-primary hover:bg-primary/5 border border-slate-50 hover:border-primary/20'
-                }`}
-              >
-                <ThumbsUp className={`w-6 h-6 ${idea.voted ? 'fill-current' : ''}`} />
-                <span className="font-black mt-2 text-lg">{idea.votes}</span>
-              </button>
-
-              {/* Idea Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-                  <h3 className="text-slate-900 font-black text-2xl tracking-tight group-hover:text-primary transition-colors">{idea.title}</h3>
-                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black border uppercase tracking-wider shadow-sm 
-                    ${idea.status === 'new' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                      idea.status === 'under-review' ? 'bg-sky-50 text-primary border-sky-100' :
-                      idea.status === 'implemented' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                      'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                    {idea.status.replace('-', ' ')}
-                  </span>
+      <div className="max-w-5xl mx-auto space-y-8">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Loading Ideas...</p>
+          </div>
+        ) : ideas.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 mb-6">
+              <Lightbulb className="w-10 h-10" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900">No ideas yet</h3>
+            <p className="text-slate-500 mt-2">Be the first to share an idea!</p>
+          </div>
+        ) : (
+          ideas.map((idea) => (
+            <div key={idea.id} className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:shadow-amber-500/5 transition-all group animate-fade-in-up">
+              <div className="flex gap-8">
+                {/* Vote Button */}
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => handleVote(idea.id)}
+                    className={`flex flex-col items-center p-4 rounded-2xl transition-all shrink-0 w-20 group/vote
+                                ${idea.is_liked
+                        ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25 scale-105'
+                        : 'bg-slate-50 text-slate-400 hover:text-amber-500 hover:bg-amber-50 hover:scale-105'
+                      }`}
+                  >
+                    <ThumbsUp className={`w-6 h-6 ${idea.is_liked ? 'fill-current' : ''}`} />
+                    <span className="font-black mt-2 text-lg">{idea.likes_count}</span>
+                  </button>
+                  {/* Owner Actions */}
+                  {Number(user?.id) === idea.user_id && (
+                    <div className="flex flex-col gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEditModal(idea)} className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-sky-500 hover:bg-sky-50 transition-colors">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(idea.id)} className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <p className="text-slate-500 text-lg font-medium leading-relaxed mb-8">{idea.description}</p>
-                
-                <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-slate-50">
-                   <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-black">
-                       {idea.author[0]}
-                     </div>
-                     <div className="flex flex-col">
-                       <span className="text-slate-900 font-black text-xs">{idea.author}</span>
-                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{idea.department}</span>
-                     </div>
-                   </div>
 
-                  <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.15em] text-slate-300 ml-auto">
-                    <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl">
-                      <Clock className="w-3.5 h-3.5" />
-                      {idea.date}
-                    </span>
-                    <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl text-primary">
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      {idea.comments} Comments
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{idea.title}</h3>
+                    <span className="px-3 py-1 bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-lg shrink-0">
+                      {format(new Date(idea.created_at), 'MMM d, yyyy')}
                     </span>
                   </div>
+
+                  <p className="text-slate-600 font-medium text-lg leading-relaxed mb-6 whitespace-pre-wrap">
+                    {idea.content}
+                  </p>
+
+                  {/* Author & Footer */}
+                  <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10 border-2 border-white shadow-sm bg-slate-100">
+                        <AvatarFallback className="bg-amber-50 text-amber-600 font-black">
+                          {idea.first_name?.[0]}{idea.last_name?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-slate-900 font-black text-xs leading-none">
+                          {idea.first_name} {idea.last_name}
+                        </p>
+                        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mt-1">
+                          {idea.position || 'Staff'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => toggleComments(idea.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all
+                                  ${expandedIdeaId === idea.id ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400 hover:bg-amber-50 hover:text-amber-600'}`}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      {idea.comments_count} Comments
+                    </button>
+                  </div>
+
+                  {/* Comments Section */}
+                  {expandedIdeaId === idea.id && (
+                    <div className="mt-8 pt-6 border-t border-slate-50 animate-fade-in-down">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Discussion ({idea.comments_count})</h4>
+
+                      {loadingComments ? (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {idea.comments && idea.comments.length > 0 ? (
+                            idea.comments.map(comment => (
+                              <div key={comment.id} className="flex gap-4 group/comment">
+                                <Avatar className="w-8 h-8 border border-slate-100">
+                                  {comment.photo ? (
+                                    <AvatarImage src={`http://localhost:5000${comment.photo}`} />
+                                  ) : (
+                                    <AvatarFallback className="bg-slate-100 text-slate-500 text-xs font-bold">
+                                      {comment.first_name[0]}
+                                    </AvatarFallback>
+                                  )}
+                                </Avatar>
+                                <div className="flex-1">
+                                  <div className="bg-slate-50 rounded-2xl p-4 relative group-hover/comment:bg-slate-100/80 transition-colors">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs font-black text-slate-900">
+                                        {comment.first_name} {comment.last_name}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 font-bold">
+                                        {format(new Date(comment.created_at), 'MMM d, h:mm a')}
+                                      </span>
+                                    </div>
+                                    <p className="text-slate-600 text-sm font-medium leading-relaxed">
+                                      {comment.comment}
+                                    </p>
+
+                                    {/* Delete Comment */}
+                                    {Number(user?.id) === comment.user_id && (
+                                      <button
+                                        onClick={() => handleDeleteComment(comment.id, idea.id)}
+                                        className="absolute top-2 right-2 p-1.5 bg-white text-slate-300 rounded-lg opacity-0 group-hover/comment:opacity-100 hover:text-red-500 shadow-sm transition-all"
+                                        title="Delete comment"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-slate-400 italic text-sm text-center py-4">No comments yet. Be the first to start the discussion!</p>
+                          )}
+
+                          {/* Add Comment Input */}
+                          <div className="flex gap-4 mt-6">
+                            <Avatar className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 font-bold text-xs ring-4 ring-white shadow-sm">
+                              <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 flex gap-2">
+                              <Input
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                placeholder="Add to the discussion..."
+                                className="h-10 rounded-xl border-slate-200 bg-white focus:ring-amber-500/20"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleAddComment(idea.id);
+                                  }
+                                }}
+                              />
+                              <Button
+                                onClick={() => handleAddComment(idea.id)}
+                                disabled={!commentText.trim()}
+                                className="bg-amber-500 text-white rounded-xl hover:bg-amber-600 w-10 px-0 shadow-lg shadow-amber-500/20"
+                              >
+                                <Send className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
