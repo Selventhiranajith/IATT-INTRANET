@@ -311,25 +311,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         )}
 
         {/* Today's Birthday Section */}
-        {isOpen && (
+        {isOpen && todaysBirthdays.length > 0 && (
           <div className="mt-4 mb-2 animate-fade-in">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-xl">🎂</span>
               <h4 className="text-[#9333ea] font-black text-sm tracking-tight uppercase">Today's Birthdays</h4>
             </div>
 
-            {todaysBirthdays.length > 0 ? (
-              <div className="space-y-3 pl-8">
-                {todaysBirthdays.map((bday, i) => (
-                  <div key={i} className="flex flex-col">
-                    <span className="text-slate-900 font-bold text-xs">{bday.name}</span>
-                    <span className="text-slate-400 text-[10px] font-medium">{bday.department}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-slate-400 text-sm font-medium pl-8">No birthdays today.</p>
-            )}
+            <div className="space-y-3 pl-8">
+              {todaysBirthdays.map((bday, i) => (
+                <div key={i} className="flex flex-col">
+                  <span className="text-slate-900 font-bold text-xs">{bday.name}</span>
+                  <span className="text-slate-400 text-[10px] font-medium">{bday.department}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
