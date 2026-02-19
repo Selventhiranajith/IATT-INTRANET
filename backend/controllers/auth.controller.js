@@ -4,6 +4,40 @@ const User = require('../models/user.model');
 const PasswordReset = require('../models/passwordReset.model');
 const authConfig = require('../config/auth.config');
 
+// Update user profile
+exports.updateProfile = async (req, res) => {
+    try {
+        const { first_name, last_name, phone, birth_date } = req.body;
+        const userId = req.userId;
+
+        // Update user in database
+        const db = require('../config/db.config');
+        await db.query(
+            'UPDATE users SET first_name = ?, last_name = ?, phone = ?, birth_date = ? WHERE id = ?',
+            [first_name, last_name, phone, birth_date, userId]
+        );
+
+        // Fetch updated user to return
+        const updatedUser = await User.findById(userId);
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile updated successfully',
+            data: {
+                user: updatedUser
+            }
+        });
+
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating profile',
+            error: error.message
+        });
+    }
+};
+
 // Register new user
 exports.register = async (req, res) => {
     try {

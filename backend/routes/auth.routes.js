@@ -15,6 +15,7 @@ router.get('/me', authMiddleware.verifyToken, authController.getCurrentUser);
 router.get('/birthdays', authMiddleware.verifyToken, authController.getBirthdays);
 router.get('/recent-joined', authMiddleware.verifyToken, authController.getRecentJoined);
 router.post('/logout', authMiddleware.verifyToken, authController.logout);
+router.put('/profile', authMiddleware.verifyToken, authController.updateProfile);
 router.post('/change-password', authMiddleware.verifyToken, authController.changePassword);
 
 // Admin only routes

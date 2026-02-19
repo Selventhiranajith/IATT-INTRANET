@@ -16,6 +16,7 @@ export interface User {
   position?: string;
   employee_id?: string;
   birth_date?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -56,7 +57,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       branch: backendUser.branch || undefined, // Use updated branch from backend
       position: backendUser.position || 'Staff',
       employee_id: backendUser.employee_id,
-      birth_date: backendUser.birth_date
+      birth_date: backendUser.birth_date,
+      phone: backendUser.phone
     };
   };
 
