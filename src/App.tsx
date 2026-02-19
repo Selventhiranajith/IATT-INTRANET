@@ -15,6 +15,7 @@ import Events from "./pages/Events";
 import ManualAttendance from "./pages/ManualAttendance";
 import ApplyLeave from "./pages/ApplyLeave";
 import ViewAttendance from "./pages/ViewAttendance";
+import ViewBioAttendance from "./pages/ViewBioAttendance";
 import EmployeePage from "./pages/Employee";
 import LMS from "./pages/LMS";
 import ProductionTracking from "./pages/ProductionTracking";
@@ -91,7 +92,7 @@ const AppRoutes = () => {
         <Route path="attendance/employee" element={<EmployeePage />} />
         <Route path="attendance/bio" element={
           <ProtectedRoute adminOnly>
-            <ViewAttendance />
+            <ViewBioAttendance />
           </ProtectedRoute>
         } />
         <Route path="attendance/view-manual" element={

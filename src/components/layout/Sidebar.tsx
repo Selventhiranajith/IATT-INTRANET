@@ -56,7 +56,7 @@ const menuItems: MenuItem[] = [
     ]
   },
   {
-    label: 'View Attendance & Leave',
+    label: 'View Attendance',
     icon: Notebook,
     children: [
       { label: 'View Bio Attendance', icon: Fingerprint, path: '/attendance/bio', adminOnly: true },

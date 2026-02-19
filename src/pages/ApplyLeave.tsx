@@ -200,7 +200,7 @@ const ApplyLeave: React.FC = () => {
               </div>
               <h3 className="text-slate-900 font-black text-lg tracking-tight">Leave Balance</h3>
             </div>
-            
+
             <div className="space-y-4">
               {leaveTypes.map((type) => (
                 <div key={type.value} className="flex items-center justify-between p-5 rounded-2xl bg-slate-50 border border-slate-100 group hover:border-primary/20 transition-all">
@@ -228,11 +228,10 @@ const ApplyLeave: React.FC = () => {
                 <div key={request.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-3 group hover:border-primary/20 transition-all">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-900 font-bold text-sm">{request.type}</span>
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-wider shadow-sm ${
-                      request.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                      request.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
-                      'bg-red-50 text-red-600 border-red-100'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-wider shadow-sm ${request.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        request.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                          'bg-red-50 text-red-600 border-red-100'
+                      }`}>
                       {request.status}
                     </span>
                   </div>

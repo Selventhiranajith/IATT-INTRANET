@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Fingerprint, ClipboardList, Search, Filter, Download, Loader2, X, History, Clock } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ClipboardList, Search, Filter, Download, Loader2, X, History, Clock } from 'lucide-react';
+
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -22,7 +22,7 @@ interface AttendanceRecord {
 }
 
 const ViewAttendance: React.FC = () => {
-  const location = useLocation();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
@@ -34,19 +34,7 @@ const ViewAttendance: React.FC = () => {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // Determine which tab to show based on route
-  const getDefaultTab = () => {
-    if (location.pathname.includes('bio')) return 'bio';
-    if (location.pathname.includes('view-manual')) return 'manual';
-    return 'manual';
-  };
 
-  const [activeTab, setActiveTab] = useState(getDefaultTab());
-
-  // Update active tab when route changes
-  useEffect(() => {
-    setActiveTab(getDefaultTab());
-  }, [location.pathname]);
 
   // Fetch all data
   const fetchAttendanceLogs = async () => {
@@ -76,10 +64,8 @@ const ViewAttendance: React.FC = () => {
   };
 
   useEffect(() => {
-    if (activeTab === 'manual') {
-      fetchAttendanceLogs();
-    }
-  }, [activeTab, searchQuery]);
+    fetchAttendanceLogs();
+  }, [searchQuery]);
 
   // Fetch history for specific user
   const fetchUserHistory = async (userId: string) => {
@@ -213,8 +199,8 @@ const ViewAttendance: React.FC = () => {
             <ClipboardList className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Attendance Logs</h1>
-            <p className="text-slate-500 font-medium mt-1">Review biometric, manual, and leave history</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Manual Attendance Logs</h1>
+            <p className="text-slate-500 font-medium mt-1">Review manual check-in/out history</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -226,19 +212,8 @@ const ViewAttendance: React.FC = () => {
       </div>
 
       <div className="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <TabsList className="bg-slate-100/50 border border-slate-100 p-1.5 rounded-[1.5rem] w-fit">
-              <TabsTrigger value="bio" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm text-slate-400 font-black uppercase tracking-widest text-[10px] px-8 py-4 rounded-[1.25rem] transition-all">
-                <Fingerprint className="w-3.5 h-3.5 mr-2" />
-                Biometric
-              </TabsTrigger>
-              <TabsTrigger value="manual" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm text-slate-400 font-black uppercase tracking-widest text-[10px] px-8 py-4 rounded-[1.25rem] transition-all">
-                <ClipboardList className="w-3.5 h-3.5 mr-2" />
-                Manual
-              </TabsTrigger>
-            </TabsList>
-
+        <div className="space-y-10">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-end gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-4">
               {/* Search */}
               <div className="relative group w-full sm:w-auto">
@@ -266,19 +241,10 @@ const ViewAttendance: React.FC = () => {
             </div>
           </div>
 
-          <TabsContent value="bio" className="mt-0 ring-offset-transparent focus-visible:ring-0">
-            <div className="bg-slate-50/30 rounded-[2rem] border border-slate-50 overflow-hidden flex flex-col items-center justify-center p-20 text-center">
-              <Fingerprint className="w-12 h-12 text-slate-300 mb-4" />
-              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Biometric integration pending</p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="manual" className="mt-0 ring-offset-transparent focus-visible:ring-0">
-            <div className="bg-slate-50/30 rounded-[2rem] border border-slate-50 overflow-hidden">
-              {renderAttendanceTable(attendanceData)}
-            </div>
-          </TabsContent>
-        </Tabs>
+          <div className="bg-slate-50/30 rounded-[2rem] border border-slate-50 overflow-hidden">
+            {renderAttendanceTable(attendanceData)}
+          </div>
+        </div>
       </div>
 
       {/* History Modal */}
