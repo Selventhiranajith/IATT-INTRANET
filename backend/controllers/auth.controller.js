@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
+const PasswordReset = require('../models/passwordReset.model');
 const authConfig = require('../config/auth.config');
 
 // Register new user
@@ -413,6 +414,151 @@ exports.getRecentJoined = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching recent members',
+            error: error.message
+        });
+    }
+};
+
+// Forgot Password - Generate OTP
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide email'
+            });
+        }
+
+        const user = await User.findByEmail(email);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Expiry 10 minutes from now
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        // Store OTP in database
+        await PasswordReset.create(user.id, otp, expiresAt);
+
+        // In a real production app, we would send this via Email/SMS.
+        // For this INTERNAL app as requested, we return it in the response 
+        // to be displayed/handled by the frontend flow.
+        res.status(200).json({
+            success: true,
+            message: 'OTP generated successfully',
+            data: {
+                otp: otp, // Returning OTP for In-App verification flow
+                expiresIn: '10 minutes'
+            }
+        });
+
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error generating OTP',
+            error: error.message
+        });
+    }
+};
+
+// Verify OTP
+exports.verifyResetOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide email and OTP'
+            });
+        }
+
+        const user = await User.findByEmail(email);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const validToken = await PasswordReset.verify(user.id, otp);
+        if (!validToken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired OTP'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'OTP Verified successfully'
+        });
+
+    } catch (error) {
+        console.error('Verify OTP error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error verifying OTP',
+            error: error.message
+        });
+    }
+};
+
+// Reset Password
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide email, OTP and new password'
+            });
+        }
+
+        const user = await User.findByEmail(email);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Verify OTP again before resetting
+        const validToken = await PasswordReset.verify(user.id, otp);
+        if (!validToken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired OTP'
+            });
+        }
+
+        // Update Password (plain text as per existing system)
+        const db = require('../config/db.config');
+        await db.query('UPDATE users SET password = ? WHERE id = ?', [newPassword, user.id]);
+
+        // Consume OTP
+        await PasswordReset.markAsUsed(validToken.id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successfully'
+        });
+
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error resetting password',
             error: error.message
         });
     }
