@@ -27,7 +27,8 @@ import {
   User,
   ShieldAlert,
   Settings,
-  Users2
+  Users2,
+  Megaphone
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -88,6 +89,7 @@ const menuItems: MenuItem[] = [
       { label: 'HR Policy', icon: ScrollText, path: '/misc/hr-policy' },
       { label: 'Ideas', icon: Lightbulb, path: '/misc/ideas' },
       { label: 'Thoughts', icon: Quote, path: '/misc/thoughts' },
+      { label: 'Announcements', icon: Megaphone, path: '/misc/announcements' },
       { label: 'Holidays', icon: PartyPopper, path: '/misc/holidays' },
       { label: 'Birthday', icon: Cake, path: '/misc/birthday' },
     ]

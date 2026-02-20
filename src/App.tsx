@@ -24,6 +24,7 @@ import Documents from "./pages/Documents";
 import HRPolicy from "./pages/HRPolicy";
 import Ideas from "./pages/Ideas";
 import Thoughts from "./pages/Thoughts";
+import Announcements from "./pages/Announcements";
 import Holidays from "./pages/Holidays";
 import Birthday from "./pages/Birthday";
 import AccountSettings from "./pages/AccountSettings";
@@ -120,6 +121,7 @@ const AppRoutes = () => {
         <Route path="misc/hr-policy" element={<HRPolicy />} />
         <Route path="misc/ideas" element={<Ideas />} />
         <Route path="misc/thoughts" element={<Thoughts />} />
+        <Route path="misc/announcements" element={<Announcements />} />
         <Route path="misc/holidays" element={<Holidays />} />
         <Route path="misc/birthday" element={<Birthday />} />
 
