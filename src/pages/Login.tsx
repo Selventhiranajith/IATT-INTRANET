@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, LogIn, Loader2, ArrowLeft, KeyRound, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Loader2, ArrowLeft, KeyRound, Mail, Lock, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = 'http://localhost:5000/api/auth';
@@ -24,21 +24,7 @@ const Login: React.FC = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetOtp, setResetOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState(''); // Store valid OTP locally for demo/in-app display
-
-  const [currentImage, setCurrentImage] = useState('/assets/login-1.png');
-
-  // Rotate login image on random
-  React.useEffect(() => {
-    const images = [
-      '/assets/login-1.png',
-      '/assets/login-2.jpg',
-      '/assets/login-3.png',
-      '/assets/login-4.png'
-    ];
-    const randomIndex = Math.floor(Math.random() * images.length);
-    setCurrentImage(images[randomIndex]);
-  }, []);
+  const [generatedOtp, setGeneratedOtp] = useState('');
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,14 +63,11 @@ const Login: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        setGeneratedOtp(data.data.otp); // Save for display
+        setGeneratedOtp(data.data.otp);
         setView('forgot-otp');
         toast.success('OTP Generated', {
           description: 'Please check the notification for your OTP.',
         });
-        // IN-APP OPT DISPLAY (Since no Email/SMS)
-        // We also display it in the UI, so alert is redundant but compliant with "verify inside app"
-        // alert(`Your Verification OTP is: ${data.data.otp}`); 
       } else {
         toast.error('Error', { description: data.message });
       }
@@ -133,7 +116,6 @@ const Login: React.FC = () => {
       if (data.success) {
         toast.success('Success', { description: 'Password reset successfully. Please login.' });
         setView('login');
-        // Reset states
         setResetEmail('');
         setResetOtp('');
         setNewPassword('');
@@ -149,134 +131,168 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 font-sans antialiased text-slate-900 relative overflow-hidden">
-      {/* Background Image / Gradient */}
-      <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans antialiased">
+      {/* Design Container */}
+      <div className="w-full max-w-[850px] h-[540px] bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row relative animate-scale-in">
 
-      {/* Login Card */}
-      <div className="w-full max-w-md relative z-10 animate-scale-in">
-        <div className="bg-white border border-slate-100 rounded-[2.5rem] p-10 md:p-12 shadow-2xl shadow-slate-200/50">
+        {/* Left Side: Brand & Visuals */}
+        <div className="hidden md:flex md:w-[45%] bg-primary relative flex-col items-center justify-center p-12 text-white overflow-hidden">
+          {/* Animated Background Blobs */}
+          <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
 
-          {/* Header Section */}
-          <div className="text-center mb-10">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-primary/10 flex items-center justify-center mb-6 shadow-sm border border-primary/5 p-4">
-              <img src="/assets/favicon1.png" alt="IATT Logo" className="w-full h-full object-contain" />
+          {/* Content */}
+          <div className="relative z-10 text-center space-y-8 animate-fade-in">
+            <div className="flex flex-col items-center space-y-2">
+              <div className="w-24 h-24 bg-white rounded-[2rem] p-4 shadow-xl flex items-center justify-center animate-float">
+                <img src="/assets/favicon1.png" alt="IATT Logo" className="w-full h-full object-contain" />
+              </div>
+              <div className="text-center">
+                <h1 className="text-2xl font-black tracking-tighter uppercase leading-none md:text-3xl">IATT INTRANET</h1>
+                <p className="text-[10px] font-bold uppercase tracking-[0.5em] mt-1 opacity-80">Portal</p>
+              </div>
             </div>
-            <h1 className="text-2xl font-black text-primary tracking-tight leading-none uppercase">
-              {view === 'login' ? (
-                branch === 'Guindy' ? 'IAT Technologies' : branch === 'Nungambakkam' ? 'IAT Solutions' : 'IATT INTRANET'
-              ) : (
-                'Reset Password'
-              )}
-            </h1>
-            <p className="text-slate-400 font-bold text-xs tracking-[0.3em] uppercase mt-2 opacity-80">
-              {view === 'login' ? 'Portal' : view === 'forgot-email' ? 'Step 1/3' : view === 'forgot-otp' ? 'Step 2/3' : 'Step 3/3'}
+          </div>
+
+          {/* Wavy/Cloud Border Separator */}
+          <div className="absolute top-0 right-0 h-full w-20 transform translate-x-1 pointer-events-none overflow-hidden">
+            <svg className="h-full w-full fill-white" viewBox="0 0 100 800" preserveAspectRatio="none">
+              <path d="M100,0 C60,50 60,150 100,200 C60,250 60,350 100,400 C60,450 60,550 100,600 C60,650 60,750 100,800 L100,0 Z" />
+            </svg>
+            <svg className="h-full w-full fill-white/20 absolute top-0 right-2" viewBox="0 0 100 800" preserveAspectRatio="none">
+              <path d="M100,0 C40,50 40,150 100,200 C40,250 40,350 100,400 C40,450 40,550 100,600 C40,650 40,750 100,800 L100,0 Z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Right Side: Form Content */}
+        <div className="flex-1 p-6 md:p-10 flex flex-col justify-center bg-white relative">
+
+          <div className="mb-6 text-center pt-8">
+            <h2 className="text-2xl font-black text-primary tracking-tight leading-none uppercase">
+              {view === 'login' ? 'IAT TECHNOLOGIES' : 'Reset Password'}
+            </h2>
+            <p className="text-slate-400 font-bold text-[10px] tracking-[0.3em] uppercase mt-2 opacity-60">
+              {view === 'login' ? 'Portal Access' : view === 'forgot-email' ? 'Step 1/3' : view === 'forgot-otp' ? 'Step 2/3' : 'Step 3/3'}
             </p>
           </div>
 
           {/* VIEW: LOGIN */}
           {view === 'login' && (
-            <form onSubmit={handleLoginSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Select Branch</label>
-                <select
-                  value={branch}
-                  onChange={(e) => setBranch(e.target.value)}
-                  className="w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-100 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium appearance-none"
-                  required
-                >
-                  <option value="Guindy">Guindy</option>
-                  <option value="Nungambakkam">Nungambakkam</option>
-                </select>
-              </div>
+            <form onSubmit={handleLoginSubmit} className="space-y-6 max-w-sm mx-auto w-full">
+              <div className="space-y-4">
+                {/* Branch Selection */}
+                <div className="space-y-1.5 pl-1">
+                  <label className="text-slate-400 text-[11px] font-black uppercase tracking-widest">Select Branch</label>
+                  <div className="relative group">
+                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                    <select
+                      value={branch}
+                      onChange={(e) => setBranch(e.target.value)}
+                      className="w-full pl-12 pr-6 py-3.5 rounded-2xl bg-slate-50 border border-transparent border-b-2 border-b-slate-100 text-slate-900 focus:outline-none focus:border-b-primary transition-all font-medium appearance-none cursor-pointer"
+                      required
+                    >
+                      <option value="Guindy">Guindy</option>
+                      <option value="Nungambakkam">Nungambakkam</option>
+                    </select>
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Email Address</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className="w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-100 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium"
-                  required
-                />
-              </div>
+                {/* Email Address */}
+                <div className="space-y-1.5 pl-1">
+                  <label className="text-slate-400 text-[11px] font-black uppercase tracking-widest">Email Address</label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      className="w-full pl-12 pr-6 py-3.5 rounded-2xl bg-slate-50 border border-transparent border-b-2 border-b-slate-100 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-b-primary transition-all font-medium"
+                      required
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-100 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                {/* Password */}
+                <div className="space-y-1.5 pl-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-slate-400 text-[11px] font-black uppercase tracking-widest">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => setView('forgot-email')}
+                      className="text-primary text-[10px] font-bold uppercase tracking-wider hover:underline transition-all"
+                    >
+                      Forgot?
+                    </button>
+                  </div>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-transparent border-b-2 border-b-slate-100 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-b-primary transition-all font-medium"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest cursor-pointer group">
-                  <input type="checkbox" className="w-4 h-4 rounded border-slate-200 text-primary focus:ring-primary/20 cursor-pointer" />
-                  <span className="group-hover:text-slate-600 transition-colors">Remember me</span>
-                </label>
+              <div className="pt-2">
                 <button
-                  type="button"
-                  onClick={() => setView('forgot-email')}
-                  className="text-primary text-[10px] font-black uppercase tracking-widest hover:text-primary/80 transition-colors"
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-4 bg-primary text-white rounded-[2rem] shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-black uppercase tracking-[0.2em] text-sm disabled:opacity-50"
                 >
-                  Forgot?
+                  {isLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <LogIn className="w-5 h-5" />
+                      Log In
+                    </>
+                  )}
                 </button>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-5 bg-primary text-white rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-black uppercase tracking-[0.2em] text-sm disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <LogIn className="w-5 h-5" />
-                    Sign In
-                  </>
-                )}
-              </button>
+              <p className="text-center text-slate-300 font-bold uppercase tracking-[0.3em] text-[10px] mt-6">
+                © 2024 IAT Technologies. All rights reserved.
+              </p>
             </form>
           )}
 
           {/* VIEW: FORGOT - EMAIL */}
           {view === 'forgot-email' && (
-            <form onSubmit={handleForgotEmailSubmit} className="space-y-6 animate-in slide-in-from-right duration-300">
-              <div className="space-y-2">
-                <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Email Address</label>
+            <form onSubmit={handleForgotEmailSubmit} className="space-y-6 max-w-sm mx-auto w-full animate-in slide-in-from-right duration-300">
+              <div className="space-y-1.5">
+                <label className="text-slate-400 text-[11px] font-black uppercase tracking-widest pl-1">Email Address</label>
                 <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="email"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="Enter your registered email"
-                    className="w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-100 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium pl-12"
+                    placeholder="Enter registered email"
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border-b-2 border-b-slate-100 focus:outline-none focus:border-b-primary transition-all font-medium"
                     required
                     autoFocus
                   />
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-5 bg-primary text-white rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-black uppercase tracking-[0.2em] text-sm disabled:opacity-50"
+                className="w-full py-5 bg-primary text-white rounded-[2rem] shadow-xl shadow-primary/25 hover:scale-[1.02] transition-all font-black uppercase tracking-[0.2em] text-sm disabled:opacity-50"
               >
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Get OTP'}
               </button>
@@ -284,7 +300,7 @@ const Login: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setView('login')}
-                className="w-full py-4 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-2 font-black uppercase tracking-[0.2em] text-[10px]"
+                className="w-full py-2 text-slate-400 hover:text-primary transition-colors flex items-center justify-center gap-2 font-black uppercase tracking-[0.1em] text-[10px]"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Login
@@ -294,79 +310,67 @@ const Login: React.FC = () => {
 
           {/* VIEW: FORGOT - OTP */}
           {view === 'forgot-otp' && (
-            <form onSubmit={handleOtpSubmit} className="space-y-6 animate-in slide-in-from-right duration-300">
-              <div className="bg-blue-50 border border-blue-100 text-blue-800 px-4 py-3 rounded-xl text-center text-sm mb-4">
-                <strong>Demo Mode:</strong> Your OTP is <span className="font-bold font-mono text-lg">{generatedOtp}</span>
+            <form onSubmit={handleOtpSubmit} className="space-y-6 max-w-sm mx-auto w-full animate-in slide-in-from-right duration-300">
+              <div className="bg-blue-50 border border-blue-100 text-blue-800 px-4 py-3 rounded-2xl text-center text-sm mb-4 font-medium">
+                Verify Inside: OTP is <span className="font-bold font-mono text-lg">{generatedOtp}</span>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Enter OTP</label>
+              <div className="space-y-1.5">
+                <label className="text-slate-400 text-[11px] font-black uppercase tracking-widest pl-1">Verification Code</label>
                 <div className="relative">
+                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="text"
                     value={resetOtp}
                     onChange={(e) => setResetOtp(e.target.value)}
                     placeholder="6-digit OTP"
-                    className="w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-100 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium pl-12 tracking-widest text-lg"
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border-b-2 border-b-slate-100 text-slate-900 focus:outline-none focus:border-b-primary transition-all font-medium tracking-widest text-lg"
                     required
                     maxLength={6}
                     autoFocus
                   />
-                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-5 bg-primary text-white rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-black uppercase tracking-[0.2em] text-sm disabled:opacity-50"
+                className="w-full py-5 bg-primary text-white rounded-[2rem] shadow-xl shadow-primary/25 hover:scale-[1.02] transition-all font-black uppercase tracking-[0.2em] text-sm disabled:opacity-50"
               >
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify Code'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setView('forgot-email')}
-                className="w-full py-4 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-2 font-black uppercase tracking-[0.2em] text-[10px]"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
               </button>
             </form>
           )}
 
           {/* VIEW: FORGOT - NEW PASSWORD */}
           {view === 'forgot-new-password' && (
-            <form onSubmit={handleResetPasswordSubmit} className="space-y-6 animate-in slide-in-from-right duration-300">
-              <div className="space-y-2">
-                <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">New Password</label>
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-6 max-w-sm mx-auto w-full animate-in slide-in-from-right duration-300">
+              <div className="space-y-1.5">
+                <label className="text-slate-400 text-[11px] font-black uppercase tracking-widest pl-1">New Password</label>
                 <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
-                    className="w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-100 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium pl-12"
+                    placeholder="Set new password"
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border-b-2 border-b-slate-100 text-slate-900 focus:outline-none focus:border-b-primary transition-all font-medium"
                     required
                     autoFocus
                   />
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-5 bg-primary text-white rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-black uppercase tracking-[0.2em] text-sm disabled:opacity-50"
+                className="w-full py-5 bg-primary text-white rounded-[2rem] shadow-xl shadow-primary/25 hover:scale-[1.02] transition-all font-black uppercase tracking-[0.2em] text-sm disabled:opacity-50"
               >
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Reset Password'}
               </button>
             </form>
           )}
 
-          <p className="text-center text-slate-300 font-black uppercase tracking-[0.3em] text-[10px] mt-8">
-            © 2024 PM Systems
-          </p>
         </div>
       </div>
     </div>
