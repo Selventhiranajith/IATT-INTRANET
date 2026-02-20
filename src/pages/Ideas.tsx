@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Lightbulb, Send, ThumbsUp, MessageCircle, Clock, Plus, X, Trash2, Edit2, User, Loader2 } from 'lucide-react';
+import { ThumbsUp, MessageCircle, MoreHorizontal, X, Send, Trash2, Edit2, Loader2, Lightbulb } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Comment {
   id: number;
@@ -33,7 +38,7 @@ interface Idea {
   position?: string;
   likes_count: number;
   comments_count: number;
-  is_liked: boolean; // boolean (0 or 1 from backend)
+  is_liked: boolean;
   comments?: Comment[];
 }
 
@@ -41,8 +46,13 @@ const Ideas: React.FC = () => {
   const { user } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+
+  // Create Form State
   const [newIdea, setNewIdea] = useState({ title: '', content: '' });
+
+  // Edit Form State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({ title: '', content: '' });
   const [editingIdea, setEditingIdea] = useState<Idea | null>(null);
 
   // Comment state
@@ -60,7 +70,6 @@ const Ideas: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        // Convert is_liked from 0/1 to boolean if needed, though JS handles truthy/falsy
         setIdeas(data.data);
       }
     } catch (error) {
@@ -89,12 +98,11 @@ const Ideas: React.FC = () => {
       if (data.success) {
         setIdeas(ideas.map(idea => {
           if (idea.id === ideaId) {
-            const wasLiked = idea.is_liked;
             const newLiked = data.data.liked;
             return {
               ...idea,
               is_liked: newLiked,
-              likes_count: newLiked ? idea.likes_count + 1 : Math.max(0, idea.likes_count - 1)
+              likes_count: newLiked ? (idea.likes_count + 1) : Math.max(0, idea.likes_count - 1)
             };
           }
           return idea;
@@ -105,20 +113,13 @@ const Ideas: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async () => {
     if (!newIdea.title || !newIdea.content) return;
 
     try {
       const token = localStorage.getItem('token');
-      const url = editingIdea
-        ? `http://localhost:5000/api/ideas/${editingIdea.id}`
-        : 'http://localhost:5000/api/ideas';
-
-      const method = editingIdea ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
+      const response = await fetch('http://localhost:5000/api/ideas', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -129,10 +130,8 @@ const Ideas: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(editingIdea ? 'Idea updated successfully!' : 'Idea submitted successfully!');
+        toast.success('Idea submitted successfully!');
         setNewIdea({ title: '', content: '' });
-        setShowForm(false);
-        setEditingIdea(null);
         fetchIdeas();
       } else {
         toast.error(data.message || "Failed to submit idea");
@@ -140,6 +139,37 @@ const Ideas: React.FC = () => {
     } catch (error) {
       console.error('Submit idea error:', error);
       toast.error("Error submitting idea");
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editingIdea || !editFormData.title || !editFormData.content) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/ideas/${editingIdea.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editFormData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Idea updated successfully!');
+        setEditFormData({ title: '', content: '' });
+        setShowEditModal(false);
+        setEditingIdea(null);
+        fetchIdeas();
+      } else {
+        toast.error(data.message || "Failed to update idea");
+      }
+    } catch (error) {
+      console.error('Update idea error:', error);
+      toast.error("Error updating idea");
     }
   };
 
@@ -169,8 +199,8 @@ const Ideas: React.FC = () => {
 
   const openEditModal = (idea: Idea) => {
     setEditingIdea(idea);
-    setNewIdea({ title: idea.title, content: idea.content });
-    setShowForm(true);
+    setEditFormData({ title: idea.title, content: idea.content });
+    setShowEditModal(true);
   };
 
   const toggleComments = async (ideaId: number) => {
@@ -182,7 +212,6 @@ const Ideas: React.FC = () => {
     setExpandedIdeaId(ideaId);
     setLoadingComments(true);
 
-    // Fetch details including comments
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/ideas/${ideaId}`, {
@@ -263,262 +292,317 @@ const Ideas: React.FC = () => {
   };
 
   return (
-    <div className="space-y-10 animate-fade-in pb-12">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-4 rounded-2xl bg-amber-50">
-            <Lightbulb className="w-8 h-8 text-amber-500" />
+    <div className="min-h-screen bg-[#f0f2f5] py-6 animate-fade-in">
+      <div className="max-w-2xl mx-auto px-4 space-y-5">
+
+        {/* Page Header */}
+        <div className="text-center pb-2">
+          <h1 className="text-2xl font-bold text-slate-900">Company Innovation Hub</h1>
+          <p className="text-slate-500 text-sm mt-1">Share your ideas to improve our workplace and processes</p>
+        </div>
+
+        {/* Create Post Card (Inline) */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100/50 overflow-hidden">
+          <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center gap-3">
+            <Avatar className="w-9 h-9">
+              <AvatarFallback className="bg-amber-100 text-amber-600 font-bold">
+                {user?.name?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-slate-800">Create Post</span>
+              <span className="text-xs text-slate-400">Share your idea with the team</span>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Ideas Hub</h1>
-            <p className="text-slate-500 font-medium mt-1">Share and discuss ideas to improve our workplace</p>
+
+          <div className="p-4 space-y-3">
+            <Input
+              value={newIdea.title}
+              onChange={(e) => setNewIdea({ ...newIdea, title: e.target.value })}
+              placeholder="Title of your idea"
+              className="border-none shadow-none text-lg font-semibold px-0 focus-visible:ring-0 placeholder:text-slate-400 h-auto py-1"
+            />
+            <Textarea
+              value={newIdea.content}
+              onChange={(e) => setNewIdea({ ...newIdea, content: e.target.value })}
+              placeholder={`What's on your mind, ${user?.name?.split(' ')[0]}?`}
+              className="min-h-[100px] border-none shadow-none text-[15px] resize-none px-0 focus-visible:ring-0 placeholder:text-slate-400 py-1"
+            />
+          </div>
+
+          <div className="p-3 border-t border-slate-100 flex justify-end">
+            <Button
+              onClick={handleCreate}
+              disabled={!newIdea.title || !newIdea.content}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg px-6"
+            >
+              Post
+            </Button>
           </div>
         </div>
-        <button
-          onClick={() => {
-            setEditingIdea(null);
-            setNewIdea({ title: '', content: '' });
-            setShowForm(true);
-          }}
-          className="px-8 py-4 bg-amber-500 text-white rounded-2xl shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center gap-3 font-black uppercase tracking-[0.2em] text-sm"
-        >
-          <Plus className="w-5 h-5" />
-          Submit Idea
-        </button>
-      </div>
 
-      {/* Idea Submission/Edit Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-[600px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
-          <div className="p-8 bg-slate-50 border-b border-slate-100/50">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                <div className="p-2.5 bg-amber-100/50 rounded-xl text-amber-600">
-                  <Lightbulb className="w-6 h-6" />
-                </div>
-                {editingIdea ? 'Edit Your Idea' : 'Submit New Idea'}
+        {/* Edit Post Modal */}
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent className="sm:max-w-[500px] rounded-xl border-none shadow-xl p-0 overflow-hidden bg-white gap-0">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-center relative">
+              <DialogTitle className="text-xl font-bold text-slate-900">
+                Edit Post
               </DialogTitle>
-              <p className="text-slate-500 font-medium ml-[3.25rem]">
-                {editingIdea ? 'Update your idea details below' : 'Share your innovative thoughts with the team'}
-              </p>
-            </DialogHeader>
-          </div>
-
-          <div className="p-8 space-y-6">
-            <div className="space-y-2">
-              <Label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Idea Title</Label>
-              <Input
-                value={newIdea.title}
-                onChange={(e) => setNewIdea({ ...newIdea, title: e.target.value })}
-                placeholder="Give your idea a catchy title..."
-                className="h-14 rounded-2xl bg-slate-50 border-slate-100 font-bold text-lg focus:ring-amber-500/20 focus:border-amber-500/50"
-              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-3 top-3 rounded-full hover:bg-slate-100 h-9 w-9 text-slate-500"
+                onClick={() => setShowEditModal(false)}
+              >
+                <X className="w-6 h-6" />
+              </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">Detailed Description</Label>
-              <Textarea
-                value={newIdea.content}
-                onChange={(e) => setNewIdea({ ...newIdea, content: e.target.value })}
-                placeholder="Describe your idea in detail. What problem does it solve? How does it help?"
-                className="min-h-[150px] rounded-2xl bg-slate-50 border-slate-100 font-medium text-base leading-relaxed focus:ring-amber-500/20 focus:border-amber-500/50 resize-none p-4"
-              />
+            <div className="p-4 overflow-y-auto max-h-[70vh]">
+              <div className="flex items-center gap-3 mb-4">
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback className="bg-amber-100 text-amber-600 font-bold">
+                    {user?.name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-slate-900 text-[15px] leading-tight">{user?.name}</span>
+                  <div className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-md font-semibold flex items-center gap-1 w-fit mt-0.5">
+                    <Lightbulb className="w-3 h-3 text-amber-600" /> Idea
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Input
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                  placeholder="Subject / Title"
+                  className="border-none shadow-none text-xl font-medium px-0 focus-visible:ring-0 placeholder:text-slate-400 h-auto py-0"
+                />
+                <Textarea
+                  value={editFormData.content}
+                  onChange={(e) => setEditFormData({ ...editFormData, content: e.target.value })}
+                  placeholder={`What's on your mind?`}
+                  className="min-h-[150px] border-none shadow-none text-base resize-none px-0 focus-visible:ring-0 placeholder:text-slate-400 py-0"
+                />
+              </div>
             </div>
-          </div>
 
-          <DialogFooter className="p-8 pt-0 gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => setShowForm(false)}
-              className="rounded-xl font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black uppercase tracking-widest px-8 shadow-lg shadow-amber-500/20"
-            >
-              {editingIdea ? 'Save Changes' : 'Submit Idea'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div className="p-4 pt-0">
+              <Button
+                onClick={handleUpdate}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg h-10 text-[15px]"
+                disabled={!editFormData.title || !editFormData.content}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-      {/* Ideas Feed */}
-      <div className="max-w-5xl mx-auto space-y-8">
+        {/* Feed Items */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
-            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Loading Ideas...</p>
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
           </div>
         ) : ideas.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 mb-6">
-              <Lightbulb className="w-10 h-10" />
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-slate-100">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 mb-4">
+              <Lightbulb className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-black text-slate-900">No ideas yet</h3>
+            <h3 className="text-xl font-bold text-slate-900">No ideas yet</h3>
             <p className="text-slate-500 mt-2">Be the first to share an idea!</p>
           </div>
         ) : (
           ideas.map((idea) => (
-            <div key={idea.id} className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:shadow-amber-500/5 transition-all group animate-fade-in-up">
-              <div className="flex gap-8">
-                {/* Vote Button */}
-                <div className="flex flex-col items-center gap-2">
-                  <button
-                    onClick={() => handleVote(idea.id)}
-                    className={`flex flex-col items-center p-4 rounded-2xl transition-all shrink-0 w-20 group/vote
-                                ${idea.is_liked
-                        ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25 scale-105'
-                        : 'bg-slate-50 text-slate-400 hover:text-amber-500 hover:bg-amber-50 hover:scale-105'
-                      }`}
-                  >
-                    <ThumbsUp className={`w-6 h-6 ${idea.is_liked ? 'fill-current' : ''}`} />
-                    <span className="font-black mt-2 text-lg">{idea.likes_count}</span>
-                  </button>
-                  {/* Owner Actions */}
-                  {Number(user?.id) === idea.user_id && (
-                    <div className="flex flex-col gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEditModal(idea)} className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-sky-500 hover:bg-sky-50 transition-colors">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(idea.id)} className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+            <div key={idea.id} className="bg-white rounded-xl shadow-sm animate-fade-in-up border border-slate-100">
+              {/* Post Header */}
+              <div className="p-4 pb-2 flex items-start justify-between">
+                <div className="flex gap-3">
+                  <Avatar className="w-10 h-10 border border-slate-100 cursor-pointer">
+                    <AvatarFallback className="bg-amber-50 text-amber-600 font-bold">
+                      {idea.first_name?.[0]}{idea.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 text-[15px] leading-snug cursor-pointer hover:underline">
+                      {idea.first_name} {idea.last_name}
+                    </h3>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                      <span className="hover:underline cursor-pointer">{format(new Date(idea.created_at), 'd MMM')}</span>
+                      <span>•</span>
+                      <span className="font-medium">{format(new Date(idea.created_at), 'h:mm a')}</span>
+                      {idea.position && (
+                        <>
+                          <span>•</span>
+                          <span className="font-medium bg-slate-100 px-1.5 rounded-[3px] uppercase tracking-wide text-[10px]">
+                            {idea.position}
+                          </span>
+                        </>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{idea.title}</h3>
-                    <span className="px-3 py-1 bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-lg shrink-0">
-                      {format(new Date(idea.created_at), 'MMM d, yyyy')}
-                    </span>
-                  </div>
+                {Number(user?.id) === idea.user_id && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="text-slate-500 hover:bg-slate-100 p-2 rounded-full transition-colors h-9 w-9 flex items-center justify-center -mr-2">
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40 rounded-lg shadow-lg">
+                      <DropdownMenuItem onClick={() => openEditModal(idea)} className="cursor-pointer font-medium py-2">
+                        <Edit2 className="w-4 h-4 mr-2" /> Edit Post
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDelete(idea.id)} className="text-red-600 cursor-pointer focus:text-red-700 focus:bg-red-50 font-medium py-2">
+                        <Trash2 className="w-4 h-4 mr-2" /> Move to trash
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
 
-                  <p className="text-slate-600 font-medium text-lg leading-relaxed mb-6 whitespace-pre-wrap">
-                    {idea.content}
-                  </p>
+              {/* Post Content */}
+              <div className="px-4 pb-3">
+                <h4 className="font-bold text-slate-900 text-[17px] mb-1 leading-snug">{idea.title}</h4>
+                <p className="text-slate-900 text-[15px] leading-relaxed whitespace-pre-wrap">
+                  {idea.content}
+                </p>
+              </div>
 
-                  {/* Author & Footer */}
-                  <div className="flex items-center justify-between pt-6 border-t border-slate-50">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10 border-2 border-white shadow-sm bg-slate-100">
-                        <AvatarFallback className="bg-amber-50 text-amber-600 font-black">
-                          {idea.first_name?.[0]}{idea.last_name?.[0]}
+              {/* Stats - Like/Comment Counts */}
+              <div className="px-4 py-2.5 flex items-center justify-between text-[15px] text-slate-500">
+                <div className="flex items-center gap-1.5 cursor-pointer hover:underline">
+                  {idea.likes_count > 0 && (
+                    <>
+                      <div className="w-[18px] h-[18px] bg-amber-500 rounded-full flex items-center justify-center">
+                        <ThumbsUp className="w-2.5 h-2.5 text-white fill-current" />
+                      </div>
+                      <span className="text-slate-600">{idea.likes_count}</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="hover:underline cursor-pointer text-slate-600" onClick={() => toggleComments(idea.id)}>
+                    {idea.comments_count} comments
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="px-3 pb-2">
+                <div className="flex border-t border-slate-200/60 pt-1">
+                  <button
+                    onClick={() => handleVote(idea.id)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md transition-colors text-[15px] font-semibold
+                      ${idea.is_liked ? 'text-amber-600' : 'text-slate-600 hover:bg-slate-100'}`}
+                  >
+                    <ThumbsUp className={`w-5 h-5 ${idea.is_liked ? 'fill-current' : ''}`} />
+                    Like
+                  </button>
+                  <button
+                    onClick={() => toggleComments(idea.id)}
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md transition-colors text-[15px] font-semibold text-slate-600 hover:bg-slate-100"
+                  >
+                    <MessageCircle className="w-5 h-5 transform scale-x-[-1]" />
+                    Comment
+                  </button>
+                </div>
+              </div>
+
+              {/* Comments Section */}
+              {expandedIdeaId === idea.id && (
+                <div className="px-4 pb-4 animate-fade-in">
+                  <div className="border-t border-slate-200/60 pt-4 space-y-4">
+
+                    {/* Comments List */}
+                    {loadingComments ? (
+                      <div className="flex justify-center py-2">
+                        <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                      </div>
+                    ) : (
+                      idea.comments && idea.comments.length > 0 ? (
+                        <div className="space-y-4">
+                          {idea.comments.map(comment => (
+                            <div key={comment.id} className="flex gap-2 group/comment">
+                              <Avatar className="w-8 h-8 cursor-pointer">
+                                {comment.photo ? (
+                                  <AvatarImage src={`http://localhost:5000${comment.photo}`} />
+                                ) : (
+                                  <AvatarFallback className="bg-amber-100 text-amber-600 text-xs font-bold">
+                                    {comment.first_name[0]}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div className="flex items-start gap-2 max-w-[85%] group">
+                                <div className="bg-slate-100 rounded-2xl px-3 py-2 relative">
+                                  <p className="text-[13px] font-bold text-slate-900 cursor-pointer hover:underline mb-0.5 leading-none">
+                                    {comment.first_name} {comment.last_name}
+                                  </p>
+                                  <p className="text-[15px] text-slate-900 leading-snug">
+                                    {comment.comment}
+                                  </p>
+                                </div>
+                                {Number(user?.id) === comment.user_id && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <button className="opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-all">
+                                        <MoreHorizontal className="w-4 h-4" />
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      <DropdownMenuItem onClick={() => handleDeleteComment(comment.id, idea.id)} className="text-red-600">
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-2 text-center text-slate-500 text-sm italic">
+                          No comments yet.
+                        </div>
+                      )
+                    )}
+
+                    {/* Add Comment Input */}
+                    <div className="flex gap-2 items-start mt-2">
+                      <Avatar className="w-8 h-8 mt-1">
+                        <AvatarFallback className="bg-amber-100 text-amber-600 font-bold text-xs">
+                          {user?.name?.[0]}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="text-slate-900 font-black text-xs leading-none">
-                          {idea.first_name} {idea.last_name}
-                        </p>
-                        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mt-1">
-                          {idea.position || 'Staff'}
-                        </p>
+                      <div className="flex-1 relative">
+                        <Input
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="Write a comment..."
+                          className="bg-slate-100 border-none rounded-2xl h-10 px-3.5 focus-visible:ring-0 placeholder:text-slate-500 pr-10 text-[15px]"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAddComment(idea.id);
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => handleAddComment(idea.id)}
+                          className={`absolute right-3 top-3 transition-colors ${commentText.trim() ? 'text-amber-600 hover:text-amber-700' : 'text-slate-400 cursor-not-allowed'}`}
+                          disabled={!commentText.trim()}
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => toggleComments(idea.id)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all
-                                  ${expandedIdeaId === idea.id ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400 hover:bg-amber-50 hover:text-amber-600'}`}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      {idea.comments_count} Comments
-                    </button>
                   </div>
-
-                  {/* Comments Section */}
-                  {expandedIdeaId === idea.id && (
-                    <div className="mt-8 pt-6 border-t border-slate-50 animate-fade-in-down">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Discussion ({idea.comments_count})</h4>
-
-                      {loadingComments ? (
-                        <div className="flex justify-center py-4">
-                          <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
-                        </div>
-                      ) : (
-                        <div className="space-y-6">
-                          {idea.comments && idea.comments.length > 0 ? (
-                            idea.comments.map(comment => (
-                              <div key={comment.id} className="flex gap-4 group/comment">
-                                <Avatar className="w-8 h-8 border border-slate-100">
-                                  {comment.photo ? (
-                                    <AvatarImage src={`http://localhost:5000${comment.photo}`} />
-                                  ) : (
-                                    <AvatarFallback className="bg-slate-100 text-slate-500 text-xs font-bold">
-                                      {comment.first_name[0]}
-                                    </AvatarFallback>
-                                  )}
-                                </Avatar>
-                                <div className="flex-1">
-                                  <div className="bg-slate-50 rounded-2xl p-4 relative group-hover/comment:bg-slate-100/80 transition-colors">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs font-black text-slate-900">
-                                        {comment.first_name} {comment.last_name}
-                                      </span>
-                                      <span className="text-[10px] text-slate-400 font-bold">
-                                        {format(new Date(comment.created_at), 'MMM d, h:mm a')}
-                                      </span>
-                                    </div>
-                                    <p className="text-slate-600 text-sm font-medium leading-relaxed">
-                                      {comment.comment}
-                                    </p>
-
-                                    {/* Delete Comment */}
-                                    {Number(user?.id) === comment.user_id && (
-                                      <button
-                                        onClick={() => handleDeleteComment(comment.id, idea.id)}
-                                        className="absolute top-2 right-2 p-1.5 bg-white text-slate-300 rounded-lg opacity-0 group-hover/comment:opacity-100 hover:text-red-500 shadow-sm transition-all"
-                                        title="Delete comment"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-slate-400 italic text-sm text-center py-4">No comments yet. Be the first to start the discussion!</p>
-                          )}
-
-                          {/* Add Comment Input */}
-                          <div className="flex gap-4 mt-6">
-                            <Avatar className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 font-bold text-xs ring-4 ring-white shadow-sm">
-                              <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 flex gap-2">
-                              <Input
-                                value={commentText}
-                                onChange={(e) => setCommentText(e.target.value)}
-                                placeholder="Add to the discussion..."
-                                className="h-10 rounded-xl border-slate-200 bg-white focus:ring-amber-500/20"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleAddComment(idea.id);
-                                  }
-                                }}
-                              />
-                              <Button
-                                onClick={() => handleAddComment(idea.id)}
-                                disabled={!commentText.trim()}
-                                className="bg-amber-500 text-white rounded-xl hover:bg-amber-600 w-10 px-0 shadow-lg shadow-amber-500/20"
-                              >
-                                <Send className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
-              </div>
+              )}
             </div>
           ))
         )}
