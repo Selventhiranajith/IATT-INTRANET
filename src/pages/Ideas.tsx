@@ -320,13 +320,13 @@ const Ideas: React.FC = () => {
               value={newIdea.title}
               onChange={(e) => setNewIdea({ ...newIdea, title: e.target.value })}
               placeholder="Title of your idea"
-              className="border-none shadow-none text-lg font-semibold px-0 focus-visible:ring-0 placeholder:text-slate-400 h-auto py-1"
+              className="border-none shadow-none text-lg font-semibold px-0 focus-visible:ring-0 placeholder:text-slate-400 h-auto py-1 rounded-none"
             />
             <Textarea
               value={newIdea.content}
               onChange={(e) => setNewIdea({ ...newIdea, content: e.target.value })}
               placeholder={`What's on your mind, ${user?.name?.split(' ')[0]}?`}
-              className="min-h-[100px] border-none shadow-none text-[15px] resize-none px-0 focus-visible:ring-0 placeholder:text-slate-400 py-1"
+              className="min-h-[100px] border-none shadow-none text-[15px] resize-none px-0 focus-visible:ring-0 placeholder:text-slate-400 py-1 rounded-none"
             />
           </div>
 
