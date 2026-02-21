@@ -13,8 +13,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import ManualAttendance from "./pages/ManualAttendance";
-import ApplyLeave from "./pages/ApplyLeave";
-import ViewAttendance from "./pages/ViewAttendance";
+
 import ViewBioAttendance from "./pages/ViewBioAttendance";
 import EmployeePage from "./pages/Employee";
 import LMS from "./pages/LMS";
@@ -89,7 +88,7 @@ const AppRoutes = () => {
 
         {/* Attendance & Leave */}
         <Route path="attendance/manual" element={<ManualAttendance />} />
-        <Route path="attendance/apply-leave" element={<ApplyLeave />} />
+        <Route path="attendance/apply-leave" element={<ManualAttendance />} />
         <Route path="attendance/employee" element={<EmployeePage />} />
         <Route path="attendance/bio" element={
           <ProtectedRoute adminOnly>
@@ -98,12 +97,12 @@ const AppRoutes = () => {
         } />
         <Route path="attendance/view-manual" element={
           <ProtectedRoute adminOnly>
-            <ViewAttendance />
+            <ManualAttendance />
           </ProtectedRoute>
         } />
         <Route path="attendance/view-leave" element={
           <ProtectedRoute adminOnly>
-            <ViewAttendance />
+            <ManualAttendance />
           </ProtectedRoute>
         } />
 

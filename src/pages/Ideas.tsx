@@ -42,6 +42,20 @@ interface Idea {
   comments?: Comment[];
 }
 
+// Generate a consistent avatar color from a name
+const avatarColors = [
+  'from-violet-500 to-purple-600',
+  'from-blue-500 to-cyan-500',
+  'from-emerald-500 to-teal-500',
+  'from-orange-500 to-amber-500',
+  'from-rose-500 to-pink-500',
+  'from-indigo-500 to-blue-600',
+];
+const getAvatarColor = (name: string) => {
+  const idx = (name?.charCodeAt(0) || 0) % avatarColors.length;
+  return avatarColors[idx];
+};
+
 const Ideas: React.FC = () => {
   const { user } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
@@ -292,107 +306,124 @@ const Ideas: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] py-6 animate-fade-in">
-      <div className="max-w-2xl mx-auto px-4 space-y-5">
+    <div className="min-h-screen animate-fade-in" style={{ background: 'linear-gradient(135deg, #f0f2f5 0%, #e8eaf0 100%)' }}>
 
-        {/* Page Header */}
-        <div className="text-center pb-2">
-          <h1 className="text-2xl font-bold text-slate-900">Company Innovation Hub</h1>
-          <p className="text-slate-500 text-sm mt-1">Share your ideas to improve our workplace and processes</p>
+      {/* ── Hero Header ── */}
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }}>
+        {/* Decorative blobs */}
+        <div className="absolute top-[-60px] right-[-60px] w-64 h-64 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #f59e0b, transparent)' }} />
+        <div className="absolute bottom-[-40px] left-[10%] w-48 h-48 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #6366f1, transparent)' }} />
+
+        <div className="relative z-10 max-w-2xl mx-auto px-4 py-10 text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 shadow-2xl bg-white/10 backdrop-blur-sm border border-white/20 p-3">
+            <img src="/assets/favicon1.png" alt="IATT Logo" className="w-full h-full object-contain" />
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight mb-2">Company Innovation Hub</h1>
+          <p className="text-white/50 text-sm font-medium max-w-sm mx-auto">
+            Share your ideas, spark conversations, and shape the future of our workplace.
+          </p>
+          <div className="flex items-center justify-center gap-6 mt-6 text-white/40 text-xs font-bold uppercase tracking-widest">
+            <span>{ideas.length} Ideas</span>
+            <span>•</span>
+            <span>{ideas.reduce((sum, i) => sum + i.likes_count, 0)} Likes</span>
+            <span>•</span>
+            <span>{ideas.reduce((sum, i) => sum + i.comments_count, 0)} Comments</span>
+          </div>
         </div>
+      </div>
 
-        {/* Create Post Card (Inline) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100/50 overflow-hidden">
-          <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center gap-3">
-            <Avatar className="w-9 h-9">
-              <AvatarFallback className="bg-amber-100 text-amber-600 font-bold">
-                {user?.name?.[0]}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-800">Create Post</span>
-              <span className="text-xs text-slate-400">Share your idea with the team</span>
+      {/* ── Feed ── */}
+      <div className="max-w-2x1 mx-auto px-4 py-6 space-y-4">
+
+        {/* Create Post Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-white/60 overflow-hidden">
+          {/* Card Top */}
+          <div className="p-4 flex items-center gap-3 border-b border-slate-100">
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user?.name || 'U')} flex items-center justify-center text-white font-black text-sm shadow-md flex-shrink-0`}>
+              {user?.name?.[0]?.toUpperCase()}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900">{user?.name}</p>
+              <p className="text-xs text-slate-400">Share an idea with the team</p>
             </div>
           </div>
 
-          <div className="p-4 space-y-3">
+          {/* Inputs */}
+          <div className="px-4 pt-4 pb-2 space-y-2">
             <Input
               value={newIdea.title}
               onChange={(e) => setNewIdea({ ...newIdea, title: e.target.value })}
-              placeholder="Title of your idea"
-              className="border-none shadow-none text-lg font-semibold px-0 focus-visible:ring-0 placeholder:text-slate-400 h-auto py-1 rounded-none"
+              placeholder="Give your idea a title..."
+              className="border-none shadow-none bg-slate-50 rounded-xl text-base font-semibold px-4 focus-visible:ring-1 focus-visible:ring-amber-400/30 placeholder:text-slate-400 h-11"
             />
             <Textarea
               value={newIdea.content}
               onChange={(e) => setNewIdea({ ...newIdea, content: e.target.value })}
-              placeholder={`What's on your mind, ${user?.name?.split(' ')[0]}?`}
-              className="min-h-[100px] border-none shadow-none text-[15px] resize-none px-0 focus-visible:ring-0 placeholder:text-slate-400 py-1 rounded-none"
+              placeholder={`What's your big idea, ${user?.name?.split(' ')[0]}?`}
+              className="min-h-[90px] border-none shadow-none bg-slate-50 rounded-xl text-[15px] resize-none px-4 py-3 focus-visible:ring-1 focus-visible:ring-amber-400/30 placeholder:text-slate-400"
             />
           </div>
 
-          <div className="p-3 border-t border-slate-100 flex justify-end">
+          {/* Post button */}
+          <div className="px-4 pb-4 flex justify-end">
             <Button
               onClick={handleCreate}
               disabled={!newIdea.title || !newIdea.content}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg px-6"
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl px-8 shadow-lg shadow-amber-500/25 disabled:opacity-40 transition-all hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98]"
             >
-              Post
+              Post Idea
             </Button>
           </div>
         </div>
 
-        {/* Edit Post Modal */}
+        {/* Edit Modal */}
         <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-          <DialogContent className="sm:max-w-[500px] rounded-xl border-none shadow-xl p-0 overflow-hidden bg-white gap-0">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-center relative">
-              <DialogTitle className="text-xl font-bold text-slate-900">
-                Edit Post
-              </DialogTitle>
+          <DialogContent className="sm:max-w-[500px] rounded-2xl border-none shadow-2xl p-0 overflow-hidden bg-white gap-0">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-center relative">
+              <DialogTitle className="text-lg font-black text-slate-900">Edit Post</DialogTitle>
               <Button
                 variant="ghost"
                 size="icon"
                 className="absolute right-3 top-3 rounded-full hover:bg-slate-100 h-9 w-9 text-slate-500"
                 onClick={() => setShowEditModal(false)}
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </Button>
             </div>
 
-            <div className="p-4 overflow-y-auto max-h-[70vh]">
-              <div className="flex items-center gap-3 mb-4">
-                <Avatar className="w-10 h-10">
-                  <AvatarFallback className="bg-amber-100 text-amber-600 font-bold">
-                    {user?.name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="font-semibold text-slate-900 text-[15px] leading-tight">{user?.name}</span>
-                  <div className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-md font-semibold flex items-center gap-1 w-fit mt-0.5">
-                    <Lightbulb className="w-3 h-3 text-amber-600" /> Idea
+            <div className="p-5 overflow-y-auto max-h-[70vh]">
+              <div className="flex items-center gap-3 mb-5">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user?.name || 'U')} flex items-center justify-center text-white font-black text-sm shadow-md flex-shrink-0`}>
+                  {user?.name?.[0]?.toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 text-sm leading-tight">{user?.name}</p>
+                  <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-bold mt-0.5">
+                    <Lightbulb className="w-3 h-3" /> Idea
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <Input
                   value={editFormData.title}
                   onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
                   placeholder="Subject / Title"
-                  className="border-none shadow-none text-xl font-medium px-0 focus-visible:ring-0 placeholder:text-slate-400 h-auto py-0"
+                  className="border-none shadow-none bg-slate-50 rounded-xl text-lg font-bold px-4 focus-visible:ring-1 focus-visible:ring-amber-400/30 h-12"
                 />
                 <Textarea
                   value={editFormData.content}
                   onChange={(e) => setEditFormData({ ...editFormData, content: e.target.value })}
-                  placeholder={`What's on your mind?`}
-                  className="min-h-[150px] border-none shadow-none text-base resize-none px-0 focus-visible:ring-0 placeholder:text-slate-400 py-0"
+                  placeholder="What's on your mind?"
+                  className="min-h-[150px] border-none shadow-none bg-slate-50 rounded-xl text-[15px] resize-none px-4 py-3 focus-visible:ring-1 focus-visible:ring-amber-400/30"
                 />
               </div>
             </div>
 
-            <div className="p-4 pt-0">
+            <div className="px-5 pb-5">
               <Button
                 onClick={handleUpdate}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg h-10 text-[15px]"
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl h-11 text-[15px] shadow-lg shadow-amber-500/20"
                 disabled={!editFormData.title || !editFormData.content}
               >
                 Save Changes
@@ -403,43 +434,38 @@ const Ideas: React.FC = () => {
 
         {/* Feed Items */}
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
+            <p className="text-slate-400 text-sm font-medium">Loading ideas...</p>
           </div>
         ) : ideas.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-slate-100">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 mb-4">
-              <Lightbulb className="w-8 h-8" />
+          <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-white/60">
+            <div className="w-20 h-20 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4 shadow-inner">
+              <Lightbulb className="w-10 h-10 text-amber-400" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900">No ideas yet</h3>
-            <p className="text-slate-500 mt-2">Be the first to share an idea!</p>
+            <h3 className="text-xl font-black text-slate-900 mb-1">No ideas yet</h3>
+            <p className="text-slate-400 text-sm">Be the first to spark something great!</p>
           </div>
         ) : (
           ideas.map((idea) => (
-            <div key={idea.id} className="bg-white rounded-xl shadow-sm animate-fade-in-up border border-slate-100">
+            <div key={idea.id} className="bg-white rounded-2xl shadow-sm border border-white/60 overflow-hidden hover:shadow-md transition-shadow duration-200">
+
               {/* Post Header */}
-              <div className="p-4 pb-2 flex items-start justify-between">
+              <div className="p-4 pb-3 flex items-start justify-between">
                 <div className="flex gap-3">
-                  <Avatar className="w-10 h-10 border border-slate-100 cursor-pointer">
-                    <AvatarFallback className="bg-amber-50 text-amber-600 font-bold">
-                      {idea.first_name?.[0]}{idea.last_name?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${getAvatarColor(idea.first_name)} flex items-center justify-center text-white font-black text-sm shadow-md flex-shrink-0`}>
+                    {idea.first_name?.[0]?.toUpperCase()}{idea.last_name?.[0]?.toUpperCase()}
+                  </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 text-[15px] leading-snug cursor-pointer hover:underline">
+                    <p className="font-bold text-slate-900 text-[15px] leading-snug">
                       {idea.first_name} {idea.last_name}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                      <span className="hover:underline cursor-pointer">{format(new Date(idea.created_at), 'd MMM')}</span>
-                      <span>•</span>
-                      <span className="font-medium">{format(new Date(idea.created_at), 'h:mm a')}</span>
+                    </p>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                      <span className="text-xs text-slate-400">{format(new Date(idea.created_at), 'd MMM · h:mm a')}</span>
                       {idea.position && (
-                        <>
-                          <span>•</span>
-                          <span className="font-medium bg-slate-100 px-1.5 rounded-[3px] uppercase tracking-wide text-[10px]">
-                            {idea.position}
-                          </span>
-                        </>
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                          {idea.position}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -448,16 +474,16 @@ const Ideas: React.FC = () => {
                 {Number(user?.id) === idea.user_id && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="text-slate-500 hover:bg-slate-100 p-2 rounded-full transition-colors h-9 w-9 flex items-center justify-center -mr-2">
+                      <button className="text-slate-400 hover:bg-slate-100 p-2 rounded-full transition-colors h-9 w-9 flex items-center justify-center -mr-1">
                         <MoreHorizontal className="w-5 h-5" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40 rounded-lg shadow-lg">
-                      <DropdownMenuItem onClick={() => openEditModal(idea)} className="cursor-pointer font-medium py-2">
-                        <Edit2 className="w-4 h-4 mr-2" /> Edit Post
+                    <DropdownMenuContent align="end" className="w-44 rounded-xl shadow-xl border-none">
+                      <DropdownMenuItem onClick={() => openEditModal(idea)} className="cursor-pointer font-semibold py-2.5 rounded-lg">
+                        <Edit2 className="w-4 h-4 mr-2 text-slate-500" /> Edit Post
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(idea.id)} className="text-red-600 cursor-pointer focus:text-red-700 focus:bg-red-50 font-medium py-2">
-                        <Trash2 className="w-4 h-4 mr-2" /> Move to trash
+                      <DropdownMenuItem onClick={() => handleDelete(idea.id)} className="text-red-500 cursor-pointer focus:text-red-600 focus:bg-red-50 font-semibold py-2.5 rounded-lg">
+                        <Trash2 className="w-4 h-4 mr-2" /> Move to Trash
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -465,48 +491,63 @@ const Ideas: React.FC = () => {
               </div>
 
               {/* Post Content */}
-              <div className="px-4 pb-3">
-                <h4 className="font-bold text-slate-900 text-[17px] mb-1 leading-snug">{idea.title}</h4>
-                <p className="text-slate-900 text-[15px] leading-relaxed whitespace-pre-wrap">
+              <div className="px-4 pb-4">
+                {/* Title with accent left border */}
+                <div className="pl-3 border-l-4 border-amber-400 mb-3">
+                  <h4 className="font-black text-slate-900 text-[18px] leading-snug">{idea.title}</h4>
+                </div>
+                <p className="text-slate-700 text-[15px] leading-relaxed whitespace-pre-wrap">
                   {idea.content}
                 </p>
               </div>
 
-              {/* Stats - Like/Comment Counts */}
-              <div className="px-4 py-2.5 flex items-center justify-between text-[15px] text-slate-500">
-                <div className="flex items-center gap-1.5 cursor-pointer hover:underline">
-                  {idea.likes_count > 0 && (
-                    <>
-                      <div className="w-[18px] h-[18px] bg-amber-500 rounded-full flex items-center justify-center">
-                        <ThumbsUp className="w-2.5 h-2.5 text-white fill-current" />
-                      </div>
-                      <span className="text-slate-600">{idea.likes_count}</span>
-                    </>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="hover:underline cursor-pointer text-slate-600" onClick={() => toggleComments(idea.id)}>
-                    {idea.comments_count} comments
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="px-3 pb-2">
-                <div className="flex border-t border-slate-200/60 pt-1">
-                  <button
-                    onClick={() => handleVote(idea.id)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md transition-colors text-[15px] font-semibold
-                      ${idea.is_liked ? 'text-amber-600' : 'text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    <ThumbsUp className={`w-5 h-5 ${idea.is_liked ? 'fill-current' : ''}`} />
-                    Like
-                  </button>
+              {/* Stats Row */}
+              {(idea.likes_count > 0 || idea.comments_count > 0) && (
+                <div className="px-4 py-2 flex items-center justify-between border-t border-slate-50">
+                  <div className="flex items-center gap-1.5">
+                    {idea.likes_count > 0 && (
+                      <>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+                          <ThumbsUp className="w-2.5 h-2.5 text-white fill-current" />
+                        </div>
+                        <span className="text-sm text-slate-500 font-medium">{idea.likes_count}</span>
+                      </>
+                    )}
+                  </div>
                   <button
                     onClick={() => toggleComments(idea.id)}
-                    className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md transition-colors text-[15px] font-semibold text-slate-600 hover:bg-slate-100"
+                    className="text-sm text-slate-400 hover:text-slate-600 hover:underline font-medium transition-colors"
                   >
-                    <MessageCircle className="w-5 h-5 transform scale-x-[-1]" />
+                    {idea.comments_count} {idea.comments_count === 1 ? 'comment' : 'comments'}
+                  </button>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="px-3 py-1 border-t border-slate-100">
+                <div className="flex">
+                  {/* Like Button */}
+                  <button
+                    onClick={() => handleVote(idea.id)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all duration-200 text-[15px] font-bold group
+                      ${idea.is_liked
+                        ? 'text-amber-500 bg-amber-50 hover:bg-amber-100'
+                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                      }`}
+                  >
+                    <ThumbsUp className={`w-5 h-5 transition-transform group-hover:scale-110 ${idea.is_liked ? 'fill-current' : ''}`} />
+                    <span>{idea.is_liked ? 'Liked' : 'Like'}</span>
+                  </button>
+
+                  {/* Divider */}
+                  <div className="w-px bg-slate-100 my-1.5" />
+
+                  {/* Comment Button */}
+                  <button
+                    onClick={() => toggleComments(idea.id)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all duration-200 text-[15px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 group"
+                  >
+                    <MessageCircle className="w-5 h-5 transform scale-x-[-1] transition-transform group-hover:scale-x-[-1.1] group-hover:scale-y-110" />
                     Comment
                   </button>
                 </div>
@@ -515,46 +556,44 @@ const Ideas: React.FC = () => {
               {/* Comments Section */}
               {expandedIdeaId === idea.id && (
                 <div className="px-4 pb-4 animate-fade-in">
-                  <div className="border-t border-slate-200/60 pt-4 space-y-4">
+                  <div className="pt-4 space-y-4 border-t border-slate-100">
 
-                    {/* Comments List */}
                     {loadingComments ? (
-                      <div className="flex justify-center py-2">
-                        <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
                       </div>
                     ) : (
                       idea.comments && idea.comments.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {idea.comments.map(comment => (
-                            <div key={comment.id} className="flex gap-2 group/comment">
-                              <Avatar className="w-8 h-8 cursor-pointer">
-                                {comment.photo ? (
-                                  <AvatarImage src={`http://localhost:5000${comment.photo}`} />
-                                ) : (
-                                  <AvatarFallback className="bg-amber-100 text-amber-600 text-xs font-bold">
-                                    {comment.first_name[0]}
-                                  </AvatarFallback>
-                                )}
-                              </Avatar>
-                              <div className="flex items-start gap-2 max-w-[85%] group">
-                                <div className="bg-slate-100 rounded-2xl px-3 py-2 relative">
-                                  <p className="text-[13px] font-bold text-slate-900 cursor-pointer hover:underline mb-0.5 leading-none">
+                            <div key={comment.id} className="flex gap-2.5 group/comment">
+                              {/* Comment Author Avatar */}
+                              <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(comment.first_name)} flex items-center justify-center text-white font-black text-xs shadow flex-shrink-0 mt-0.5`}>
+                                {comment.first_name?.[0]?.toUpperCase()}
+                              </div>
+
+                              <div className="flex items-start gap-2 flex-1 min-w-0">
+                                {/* Comment Bubble */}
+                                <div className="bg-slate-100 rounded-2xl px-4 py-2.5 flex-1 min-w-0">
+                                  <p className="text-[12px] font-black text-slate-900 mb-1 leading-none">
                                     {comment.first_name} {comment.last_name}
                                   </p>
-                                  <p className="text-[15px] text-slate-900 leading-snug">
+                                  <p className="text-[14px] text-slate-800 leading-snug break-words">
                                     {comment.comment}
                                   </p>
                                 </div>
+
+                                {/* Comment Actions */}
                                 {Number(user?.id) === comment.user_id && (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                      <button className="opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-all">
+                                      <button className="opacity-0 group-hover/comment:opacity-100 p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-all flex-shrink-0 mt-1">
                                         <MoreHorizontal className="w-4 h-4" />
                                       </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                      <DropdownMenuItem onClick={() => handleDeleteComment(comment.id, idea.id)} className="text-red-600">
-                                        Delete
+                                    <DropdownMenuContent align="end" className="rounded-xl shadow-xl border-none w-36">
+                                      <DropdownMenuItem onClick={() => handleDeleteComment(comment.id, idea.id)} className="text-red-500 cursor-pointer font-semibold py-2 rounded-lg">
+                                        <Trash2 className="w-4 h-4 mr-2" /> Delete
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
@@ -564,25 +603,23 @@ const Ideas: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        <div className="py-2 text-center text-slate-500 text-sm italic">
-                          No comments yet.
+                        <div className="py-3 text-center text-slate-400 text-sm italic">
+                          No comments yet. Be the first to reply!
                         </div>
                       )
                     )}
 
-                    {/* Add Comment Input */}
-                    <div className="flex gap-2 items-start mt-2">
-                      <Avatar className="w-8 h-8 mt-1">
-                        <AvatarFallback className="bg-amber-100 text-amber-600 font-bold text-xs">
-                          {user?.name?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
+                    {/* Add Comment */}
+                    <div className="flex gap-2.5 items-center pt-1">
+                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(user?.name || 'U')} flex items-center justify-center text-white font-black text-xs shadow flex-shrink-0`}>
+                        {user?.name?.[0]?.toUpperCase()}
+                      </div>
                       <div className="flex-1 relative">
                         <Input
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
                           placeholder="Write a comment..."
-                          className="bg-slate-100 border-none rounded-2xl h-10 px-3.5 focus-visible:ring-0 placeholder:text-slate-500 pr-10 text-[15px]"
+                          className="bg-slate-100 border-none rounded-full h-10 px-4 pr-10 focus-visible:ring-1 focus-visible:ring-amber-400/30 placeholder:text-slate-400 text-[14px] font-medium"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
@@ -592,7 +629,10 @@ const Ideas: React.FC = () => {
                         />
                         <button
                           onClick={() => handleAddComment(idea.id)}
-                          className={`absolute right-3 top-3 transition-colors ${commentText.trim() ? 'text-amber-600 hover:text-amber-700' : 'text-slate-400 cursor-not-allowed'}`}
+                          className={`absolute right-3 top-1/2 -translate-y-1/2 transition-all ${commentText.trim()
+                            ? 'text-amber-500 hover:text-amber-600 hover:scale-110'
+                            : 'text-slate-300 cursor-not-allowed'
+                            }`}
                           disabled={!commentText.trim()}
                         >
                           <Send className="w-4 h-4" />

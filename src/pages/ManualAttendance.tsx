@@ -295,7 +295,7 @@ const ManualAttendance: React.FC = () => {
                       <div>
                         {/* Session number — like video title */}
                         <p className="text-slate-900 font-bold text-[13px] leading-tight mb-1.5">
-                          Session #{index + 1}
+                          Session {index + 1}
                         </p>
 
                         {/* Check-in row */}
