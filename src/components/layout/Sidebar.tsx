@@ -41,6 +41,7 @@ interface MenuItem {
   label: string;
   icon: React.ElementType;
   path?: string;
+  externalUrl?: string;
   children?: MenuItem[];
   adminOnly?: boolean;
   superAdminOnly?: boolean;
@@ -69,17 +70,19 @@ const menuItems: MenuItem[] = [
     label: 'Projects & Products',
     icon: FolderKanban,
     children: [
-      { label: 'Products', icon: Package, path: '/projects/products' },
+      { label: 'Products', icon: Package, externalUrl: 'http://75.119.152.53/iat_projects' },
     ]
   },
-  {
-    label: 'Documents',
-    icon: Files,
-    children: [
-      { label: 'Admin', icon: User, path: '/documents/admin' },
-      { label: 'Management', icon: FileText, path: '/documents/management' },
-    ]
-  },
+  /*
+    {
+      label: 'Documents',
+      icon: Files,
+      children: [
+        { label: 'Admin', icon: User, path: '/documents/admin' },
+        { label: 'Management', icon: FileText, path: '/documents/management' },
+      ]
+    },
+  */
   {
     label: 'Miscellaneous',
     icon: ScrollText,
@@ -278,7 +281,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                   {item.children!.map((child) => (
                     <button
                       key={child.label}
-                      onClick={() => navigate(child.path!)}
+                      onClick={() => {
+                        if (child.externalUrl) {
+                          window.open(child.externalUrl, '_blank', 'noopener,noreferrer');
+                        } else if (child.path) {
+                          navigate(child.path);
+                        }
+                      }}
                       className={cn(
                         'flex items-center gap-4 w-full px-4 py-2 rounded-full transition-all duration-200 group relative',
                         isActive(child.path)

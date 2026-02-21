@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import ManualAttendance from "./pages/ManualAttendance";
+import ViewAttendance from "./pages/ViewAttendance";
 
 import ViewBioAttendance from "./pages/ViewBioAttendance";
 import EmployeePage from "./pages/Employee";
@@ -97,7 +98,7 @@ const AppRoutes = () => {
         } />
         <Route path="attendance/view-manual" element={
           <ProtectedRoute adminOnly>
-            <ManualAttendance />
+            <ViewAttendance />
           </ProtectedRoute>
         } />
         <Route path="attendance/view-leave" element={
