@@ -170,7 +170,7 @@ const Login: React.FC = () => {
 
           <div className="mb-6 text-center pt-8">
             <h2 className="text-2xl font-black text-primary tracking-tight leading-none uppercase">
-              {view === 'login' ? 'IAT TECHNOLOGIES' : 'Reset Password'}
+              {view === 'login' ? (branch === 'Guindy' ? 'IAT TECHNOLOGIES' : 'IAT SOLUTIONS') : 'Reset Password'}
             </h2>
             <p className="text-slate-400 font-bold text-[10px] tracking-[0.3em] uppercase mt-2 opacity-60">
               {view === 'login' ? 'Portal Access' : view === 'forgot-email' ? 'Step 1/3' : view === 'forgot-otp' ? 'Step 2/3' : 'Step 3/3'}
@@ -265,7 +265,7 @@ const Login: React.FC = () => {
               </div>
 
               <p className="text-center text-slate-300 font-bold uppercase tracking-[0.3em] text-[10px] mt-6">
-                © 2024 IAT Technologies. All rights reserved.
+                © 2024 {branch === 'Guindy' ? 'IAT Technologies' : 'IAT Solutions'}. All rights reserved.
               </p>
             </form>
           )}
