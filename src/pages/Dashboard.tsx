@@ -248,7 +248,7 @@ const Dashboard: React.FC = () => {
               { icon: Factory, label: "PROD", path: "/projects/production", color: "bg-orange-50 dark:bg-orange-900/20 text-orange-500" },
               { icon: Users2, label: "CRM", external: "https://crm.iattechnologies.com/", color: "bg-violet-50 dark:bg-violet-900/20 text-violet-500" },
               { icon: Files, label: "DOC", path: "/projects/documents", color: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500" },
-              { icon: ScrollText, label: "HR", path: "/misc/hr-policy", color: "bg-pink-50 dark:bg-pink-900/20 text-pink-500" },
+              { icon: ScrollText, label: "HR POLICY", path: "/misc/hr-policy", color: "bg-pink-50 dark:bg-pink-900/20 text-pink-500" },
               { icon: Lightbulb, label: "IDEAS", path: "/misc/ideas", color: "bg-amber-50 dark:bg-amber-900/20 text-amber-500" },
             ].map((app, i) => (
               <button
