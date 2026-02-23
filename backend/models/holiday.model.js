@@ -34,7 +34,7 @@ class Holiday {
             const params = [];
 
             if (filters.branch) {
-                query += ' AND h.branch = ?';
+                query += ' AND (h.branch = ? OR h.branch = "All")';
                 params.push(filters.branch);
             }
 

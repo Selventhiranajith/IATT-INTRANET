@@ -198,7 +198,8 @@ exports.login = async (req, res) => {
             {
                 id: user.id,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                branch: branch || user.branch
             },
             authConfig.secret,
             {
@@ -208,6 +209,11 @@ exports.login = async (req, res) => {
 
         // Remove password from user object
         delete user.password;
+
+        // Ensure user object returned matches the login branch for consistency
+        if (!user.branch && branch) {
+            user.branch = branch;
+        }
 
         res.status(200).json({
             success: true,
@@ -243,7 +249,10 @@ exports.getCurrentUser = async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
-                user
+                user: {
+                    ...user,
+                    branch: req.userBranch || user.branch
+                }
             }
         });
 
@@ -333,8 +342,10 @@ exports.getAllUsers = async (req, res) => {
 
         let filters = {};
 
-        // If admin (not superadmin), filter by their branch
-        if (currentUser.role === 'admin' && currentUser.branch) {
+        // Use branch from token if available (for superadmins and admins), else use assigned branch
+        if (req.userBranch) {
+            filters.branch = req.userBranch;
+        } else if (currentUser.role === 'admin' && currentUser.branch) {
             filters.branch = currentUser.branch;
         }
 
@@ -364,8 +375,10 @@ exports.getBirthdays = async (req, res) => {
 
         let filters = { status: 'active' };
 
-        // If not superadmin, restrict to their branch
-        if (currentUser.role !== 'superadmin' && currentUser.branch) {
+        // Apply branch filter from token context or assigned branch
+        if (req.userBranch) {
+            filters.branch = req.userBranch;
+        } else if (currentUser.role !== 'superadmin' && currentUser.branch) {
             filters.branch = currentUser.branch;
         }
 
@@ -413,8 +426,10 @@ exports.getRecentJoined = async (req, res) => {
 
         let filters = { status: 'active' };
 
-        // If not superadmin, restrict to their branch
-        if (currentUser.role !== 'superadmin' && currentUser.branch) {
+        // Apply branch filter from token context or assigned branch
+        if (req.userBranch) {
+            filters.branch = req.userBranch;
+        } else if (currentUser.role !== 'superadmin' && currentUser.branch) {
             filters.branch = currentUser.branch;
         }
 
@@ -593,6 +608,73 @@ exports.resetPassword = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error resetting password',
+            error: error.message
+        });
+    }
+};
+
+// Update user (Admin only)
+exports.updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userData = { ...req.body };
+
+        // Remove fields that shouldn't be updated directly via this endpoint
+        delete userData.id;
+        delete userData.created_at;
+        delete userData.password; // Use separate change-password endpoint for security
+
+        // Map frontend fields to backend column names if needed
+        if (userData.position) {
+            userData.position = userData.position;
+        }
+
+        const success = await User.update(id, userData);
+
+        if (!success) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'User updated successfully'
+        });
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating user',
+            error: error.message
+        });
+    }
+};
+
+// Delete user (Admin only)
+exports.deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const success = await User.delete(id);
+
+        if (!success) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'User deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting user',
             error: error.message
         });
     }

@@ -17,6 +17,7 @@ interface Employee {
   role: string;
   category: 'Admin' | 'User';
   department: string;
+  branch: string;
   email: string;
   status: 'active' | 'inactive' | 'suspended';
   birth_date: string;
@@ -26,7 +27,7 @@ interface Employee {
 }
 
 const EmployeePage: React.FC = () => {
-  const { isAdmin: isAuthAdmin } = useAuth();
+  const { user, isAdmin: isAuthAdmin } = useAuth();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -43,21 +44,23 @@ const EmployeePage: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        const mappedEmployees: Employee[] = data.data.users.map((user: any) => ({
+        let mappedEmployees: Employee[] = data.data.users.map((user: any) => ({
           id: user.id.toString(),
           employee_id: user.employee_id || 'N/A',
           first_name: user.first_name || '',
           last_name: user.last_name || '',
           name: `${user.first_name} ${user.last_name}`,
           role: user.position || 'Staff',
-          category: user.role === 'admin' ? 'Admin' : 'User',
+          category: (user.role === 'admin' || user.role === 'manager' || user.role === 'hr') ? 'Admin' : 'User',
           department: user.department || 'General',
+          branch: user.branch || 'None',
           email: user.email,
           status: user.status === 'suspended' ? 'suspended' : (user.status === 'active' ? 'active' : 'inactive'),
           birth_date: user.birth_date || '',
           phone: user.phone || '',
           joinDate: user.created_at || new Date().toISOString()
         }));
+
         setEmployees(mappedEmployees);
       } else {
         toast.error(data.message || 'Failed to fetch employees');
@@ -71,11 +74,25 @@ const EmployeePage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchEmployees();
-  }, []);
+    if (user) {
+      fetchEmployees();
+    }
+  }, [user]);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newEmployee, setNewEmployee] = useState({
+  const [newEmployee, setNewEmployee] = useState<{
+    employee_id: string;
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    department: string;
+    position: string;
+    branch: string;
+    birth_date: string;
+    phone: string;
+  }>({
     employee_id: '',
     email: '',
     password: '',
@@ -84,22 +101,41 @@ const EmployeePage: React.FC = () => {
     role: 'employee',
     department: '',
     position: '',
+    branch: user?.branch || '',
     birth_date: '',
     phone: ''
   });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
-  const [editEmployee, setEditEmployee] = useState({
+  const [editEmployee, setEditEmployee] = useState<{
+    employee_id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    department: string;
+    position: string;
+    branch: string;
+    birth_date: string;
+    phone: string;
+    status: 'active' | 'inactive' | 'suspended';
+  }>({
     employee_id: '',
     email: '',
     first_name: '',
     last_name: '',
     department: '',
     position: '',
+    branch: '',
     birth_date: '',
     phone: '',
-    status: 'active' as 'active' | 'inactive' | 'suspended',
+    status: 'active',
   });
+
+  useEffect(() => {
+    if (user?.branch) {
+      setNewEmployee(prev => ({ ...prev, branch: user.branch! }));
+    }
+  }, [user]);
 
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +169,7 @@ const EmployeePage: React.FC = () => {
           role: 'employee',
           department: '',
           position: '',
+          branch: user?.branch || '',
           birth_date: '',
           phone: ''
         });
@@ -180,6 +217,7 @@ const EmployeePage: React.FC = () => {
       last_name: employee.last_name,
       department: employee.department === 'General' ? '' : employee.department,
       position: employee.role === 'Staff' ? '' : employee.role,
+      branch: employee.branch || '',
       birth_date: employee.birth_date || '',
       phone: employee.phone || '',
       status: employee.status,
@@ -407,7 +445,9 @@ const EmployeePage: React.FC = () => {
                 <User className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Employees</h1>
+                <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+                  {user?.branch ? `${user.branch} Branch ` : ""}Employees
+                </h1>
                 <p className="mt-1 text-sm font-medium text-cyan-50/95">Manage, search, and onboard team members in one place</p>
               </div>
             </div>
@@ -664,21 +704,38 @@ const EmployeePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Status</Label>
-              <Select
-                value={editEmployee.status}
-                onValueChange={(value: 'active' | 'inactive' | 'suspended') => setEditEmployee({ ...editEmployee, status: value })}
-              >
-                <SelectTrigger className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Status</Label>
+                <Select
+                  value={editEmployee.status}
+                  onValueChange={(value: 'active' | 'inactive' | 'suspended') => setEditEmployee({ ...editEmployee, status: value })}
+                >
+                  <SelectTrigger className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Branch</Label>
+                <Select
+                  value={editEmployee.branch}
+                  onValueChange={(value) => setEditEmployee({ ...editEmployee, branch: value })}
+                >
+                  <SelectTrigger className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all">
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Guindy">Guindy</SelectItem>
+                    <SelectItem value="Nungambakkam">Nungambakkam</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <DialogFooter className="pt-4 gap-3 sm:w-full sm:justify-end">
@@ -784,7 +841,7 @@ const EmployeePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Department</Label>
                 <Input
@@ -802,6 +859,21 @@ const EmployeePage: React.FC = () => {
                   onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
                   className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Branch</Label>
+                <Select
+                  value={newEmployee.branch}
+                  onValueChange={(value) => setNewEmployee({ ...newEmployee, branch: value })}
+                >
+                  <SelectTrigger className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all">
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Guindy">Guindy</SelectItem>
+                    <SelectItem value="Nungambakkam">Nungambakkam</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

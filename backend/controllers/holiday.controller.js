@@ -75,7 +75,12 @@ exports.getAllHolidays = async (req, res) => {
 
         let filters = {};
 
-        // No branch filtering - everyone sees all holidays
+        // Use branch from token if available, else use assigned branch
+        if (req.userBranch) {
+            filters.branch = req.userBranch;
+        } else if (currentUser.role !== 'superadmin' && currentUser.branch) {
+            filters.branch = currentUser.branch;
+        }
 
         // Optional year filter
         if (req.query.year) {

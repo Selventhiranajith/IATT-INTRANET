@@ -22,6 +22,7 @@ exports.verifyToken = (req, res, next) => {
         req.userId = decoded.id;
         req.userEmail = decoded.email;
         req.userRole = decoded.role;
+        req.userBranch = decoded.branch;
 
         next();
     } catch (error) {

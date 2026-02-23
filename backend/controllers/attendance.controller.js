@@ -142,11 +142,13 @@ exports.getAllLogs = async (req, res) => {
             employee_id
         };
 
-        // If user is Admin, force their branch
-        if (user.role === 'admin' && user.branch) {
+        // Apply branch filter from token context or query/assigned branch
+        if (req.userBranch) {
+            filters.branch = req.userBranch;
+        } else if (user.role === 'admin' && user.branch) {
             filters.branch = user.branch;
         } else if (branch) {
-            // Superadmin can filter by any branch
+            // Option for superadmin without branch context in token
             filters.branch = branch;
         }
 

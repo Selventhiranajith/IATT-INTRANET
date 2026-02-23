@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Cake, Gift, PartyPopper } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Birthday {
   id: string;
@@ -13,6 +14,7 @@ interface Birthday {
 }
 
 const Birthday: React.FC = () => {
+  const { user } = useAuth();
   const [birthdays, setBirthdays] = useState<Birthday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -30,7 +32,7 @@ const Birthday: React.FC = () => {
 
         if (data.success) {
           // Filter users who have a birth_date and map to Birthday interface
-          const birthdayList = data.data.users
+          let birthdayList = data.data.users
             .filter((user: any) => user.birth_date)
             .map((user: any) => ({
               id: user.id.toString(),
@@ -38,8 +40,14 @@ const Birthday: React.FC = () => {
               date: format(new Date(user.birth_date), 'MMM d'),
               department: user.department || 'General',
               email: user.email,
+              branch: user.branch,
               rawDate: new Date(user.birth_date) // Keep raw date for sorting/filtering
             }));
+
+          // Filter by branch if user has a branch assigned
+          if (user?.branch) {
+            birthdayList = birthdayList.filter((b: any) => b.branch === user.branch);
+          }
 
           setBirthdays(birthdayList);
         }
@@ -51,8 +59,10 @@ const Birthday: React.FC = () => {
       }
     };
 
-    fetchBirthdays();
-  }, []);
+    if (user) {
+      fetchBirthdays();
+    }
+  }, [user]);
 
   // Get today's date for comparison
   const today = format(new Date(), 'MMM d');

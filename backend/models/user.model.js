@@ -118,6 +118,33 @@ class User {
         }
     }
 
+    // Update user
+    static async update(id, userData) {
+        try {
+            const fields = [];
+            const values = [];
+
+            for (const [key, value] of Object.entries(userData)) {
+                if (value !== undefined) {
+                    fields.push(`${key} = ?`);
+                    values.push(value);
+                }
+            }
+
+            if (fields.length === 0) return true;
+
+            values.push(id);
+            const [result] = await db.query(
+                `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
+                values
+            );
+
+            return result.affectedRows > 0;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     // Delete user
     static async delete(userId) {
         try {
