@@ -4,6 +4,7 @@ import { CalendarIcon, Clock, Send, CheckCircle2, LogIn, LogOut, Timer, History,
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'react-toastify';
+import { attendanceApi } from '@/api';
 import {
   Dialog,
   DialogContent,
@@ -47,13 +48,7 @@ const ManualAttendance: React.FC = () => {
   // Fetch today's status on mount
   const fetchStatus = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/attendance/today', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await attendanceApi.getToday();
       if (data.success) {
         setStatus(data.data.status);
         setLogs(data.data.logs);
@@ -95,25 +90,15 @@ const ManualAttendance: React.FC = () => {
     }
 
     setIsLoading(true);
-    const endpoint = status === 'inactive' ? 'check-in' : 'check-out';
-
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/attendance/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ remarks })
-      });
-
-      const data = await response.json();
+      const data = status === 'inactive'
+        ? await attendanceApi.checkIn(remarks)
+        : await attendanceApi.checkOut(remarks);
 
       if (data.success) {
         toast.success(status === 'inactive' ? 'Checked In Successfully' : 'Checked Out Successfully');
         setIsModalOpen(false);
-        fetchStatus(); // Refresh data
+        fetchStatus();
       } else {
         toast.error(data.message || 'Action failed');
       }

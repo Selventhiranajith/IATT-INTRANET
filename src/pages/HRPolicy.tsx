@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { hrPolicyApi } from '@/api';
 
 interface Policy {
   id: string;
@@ -62,13 +63,7 @@ const HRPolicy: React.FC = () => {
   const fetchPolicies = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/hr', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await hrPolicyApi.getAll();
       if (data.success) {
         setPolicies(data.data);
       }
@@ -120,14 +115,7 @@ const HRPolicy: React.FC = () => {
     if (!confirm("Are you sure you want to delete this policy?")) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/hr/delete/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await hrPolicyApi.remove(id);
       if (data.success) {
         toast.success("Policy deleted successfully");
         fetchPolicies();
@@ -152,23 +140,9 @@ const HRPolicy: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('token');
-      const url = selectedPolicy
-        ? `http://localhost:5000/api/hr/update/${selectedPolicy.id}`
-        : 'http://localhost:5000/api/hr/create';
-
-      const method = selectedPolicy ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
+      const data = selectedPolicy
+        ? await hrPolicyApi.update(selectedPolicy.id, formData)
+        : await hrPolicyApi.create(formData);
 
       if (data.success) {
         toast.success(selectedPolicy ? "Policy updated successfully" : "Policy created successfully");

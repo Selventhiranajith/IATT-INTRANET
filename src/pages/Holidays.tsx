@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { toast } from 'react-toastify';
+import { holidaysApi } from '@/api';
 
 interface Holiday {
   id: number;
@@ -71,11 +72,7 @@ const Holidays: React.FC = () => {
   const fetchHolidays = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/holidays', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await holidaysApi.getAll();
       if (data.success) {
         setHolidays(data.data.holidays);
         setShowCreatedBy(data.data.isAdmin);
@@ -102,13 +99,11 @@ const Holidays: React.FC = () => {
     }
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/holidays', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ name: holidayName, date: format(holidayDate, 'yyyy-MM-dd'), description: holidayDescription })
+      const data = await holidaysApi.create({
+        name: holidayName,
+        date: format(holidayDate, 'yyyy-MM-dd'),
+        description: holidayDescription
       });
-      const data = await res.json();
       if (data.success) {
         toast.success('Holiday created successfully!');
         setIsAddModalOpen(false);
@@ -131,13 +126,11 @@ const Holidays: React.FC = () => {
     }
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/holidays/${currentHoliday.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ name: holidayName, date: format(holidayDate, 'yyyy-MM-dd'), description: holidayDescription })
+      const data = await holidaysApi.update(currentHoliday.id, {
+        name: holidayName,
+        date: format(holidayDate, 'yyyy-MM-dd'),
+        description: holidayDescription
       });
-      const data = await res.json();
       if (data.success) {
         toast.success('Holiday updated successfully!');
         setIsEditModalOpen(false);
@@ -157,12 +150,7 @@ const Holidays: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this holiday?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/holidays/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await holidaysApi.remove(id);
       if (data.success) {
         toast.success('Holiday deleted successfully!');
         fetchHolidays();

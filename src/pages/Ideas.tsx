@@ -3,6 +3,7 @@ import { ThumbsUp, MessageCircle, MoreHorizontal, X, Send, Trash2, Edit2, Loader
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
+import { ideasApi } from '@/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -76,13 +77,7 @@ const Ideas: React.FC = () => {
 
   const fetchIdeas = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/ideas', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await ideasApi.getAll();
       if (data.success) {
         setIdeas(data.data);
       }
@@ -100,15 +95,7 @@ const Ideas: React.FC = () => {
 
   const handleVote = async (ideaId: number) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/ideas/${ideaId}/like`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-
+      const data = await ideasApi.toggleLike(ideaId);
       if (data.success) {
         setIdeas(ideas.map(idea => {
           if (idea.id === ideaId) {
@@ -131,18 +118,7 @@ const Ideas: React.FC = () => {
     if (!newIdea.title || !newIdea.content) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/ideas', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(newIdea)
-      });
-
-      const data = await response.json();
-
+      const data = await ideasApi.create(newIdea);
       if (data.success) {
         toast.success('Idea submitted successfully!');
         setNewIdea({ title: '', content: '' });
@@ -160,18 +136,7 @@ const Ideas: React.FC = () => {
     if (!editingIdea || !editFormData.title || !editFormData.content) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/ideas/${editingIdea.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(editFormData)
-      });
-
-      const data = await response.json();
-
+      const data = await ideasApi.update(editingIdea.id, editFormData);
       if (data.success) {
         toast.success('Idea updated successfully!');
         setEditFormData({ title: '', content: '' });
@@ -191,15 +156,7 @@ const Ideas: React.FC = () => {
     if (!confirm("Are you sure you want to delete this idea?")) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/ideas/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-
+      const data = await ideasApi.remove(id);
       if (data.success) {
         toast.success("Idea deleted successfully");
         setIdeas(ideas.filter(i => i.id !== id));
@@ -227,11 +184,7 @@ const Ideas: React.FC = () => {
     setLoadingComments(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/ideas/${ideaId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+      const data = await ideasApi.getOne(ideaId);
       if (data.success) {
         setIdeas(ideas.map(i => i.id === ideaId ? { ...i, comments: data.data.comments } : i));
       }
@@ -246,17 +199,7 @@ const Ideas: React.FC = () => {
     if (!commentText.trim()) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/ideas/${ideaId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ comment: commentText })
-      });
-      const data = await response.json();
-
+      const data = await ideasApi.addComment(ideaId, commentText);
       if (data.success) {
         const newComment = data.data;
         setIdeas(ideas.map(i => {
@@ -281,12 +224,7 @@ const Ideas: React.FC = () => {
     if (!confirm("Delete this comment?")) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/ideas/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+      const data = await ideasApi.removeComment(commentId);
       if (data.success) {
         setIdeas(ideas.map(i => {
           if (i.id === ideaId) {

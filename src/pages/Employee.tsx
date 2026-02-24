@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-toastify';
+import { authApi } from '@/api';
 
 interface Employee {
   id: string;
@@ -36,13 +37,7 @@ const EmployeePage: React.FC = () => {
   const fetchEmployees = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await authApi.getUsers();
       if (data.success) {
         let mappedEmployees: Employee[] = data.data.users.map((user: any) => ({
           id: user.id.toString(),
@@ -60,7 +55,6 @@ const EmployeePage: React.FC = () => {
           phone: user.phone || '',
           joinDate: user.created_at || new Date().toISOString()
         }));
-
         setEmployees(mappedEmployees);
       } else {
         toast.error(data.message || 'Failed to fetch employees');
@@ -145,18 +139,7 @@ const EmployeePage: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/admin/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(newEmployee)
-      });
-
-      const data = await response.json();
-
+      const data = await authApi.createUser(newEmployee);
       if (data.success) {
         toast.success("Employee registered successfully!");
         setIsAddModalOpen(false);
@@ -235,18 +218,7 @@ const EmployeePage: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/auth/admin/users/${editingEmployeeId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(editEmployee)
-      });
-
-      const data = await response.json();
-
+      const data = await authApi.updateUser(editingEmployeeId, editEmployee);
       if (data.success) {
         toast.success("Employee updated successfully!");
         setIsEditModalOpen(false);
@@ -265,15 +237,7 @@ const EmployeePage: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/auth/admin/users/${employee.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
+      const data = await authApi.deleteUser(employee.id);
       if (data.success) {
         toast.success("Employee deleted successfully!");
         fetchEmployees();

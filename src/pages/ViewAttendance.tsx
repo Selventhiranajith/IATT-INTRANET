@@ -8,6 +8,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, isToday, differenceInMinutes } from 'date-fns';
 import { toast } from 'react-toastify';
+import { attendanceApi } from '@/api';
 
 interface AttendanceRecord {
   id: number;
@@ -94,13 +95,9 @@ const ViewAttendance: React.FC = () => {
   const fetchAttendanceLogs = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (debouncedSearch) params.append('search', debouncedSearch);
-      const res = await fetch(`http://localhost:5000/api/attendance/all?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const data = await attendanceApi.getAll(
+        debouncedSearch ? { search: debouncedSearch } : undefined
+      );
       if (data.success) setAttendanceData(data.data);
       else toast.error(data.message || 'Failed to fetch attendance logs');
     } catch {
@@ -115,11 +112,7 @@ const ViewAttendance: React.FC = () => {
   const fetchUserHistory = async (employeeId: string) => {
     setIsHistoryLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/attendance/all?employee_id=${employeeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const data = await attendanceApi.getAll({ employee_id: employeeId });
       if (data.success) setHistoryData(data.data);
     } catch {
       toast.error('Failed to load history');

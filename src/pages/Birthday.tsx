@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Cake, Gift, PartyPopper } from 'lucide-react';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
+import { authApi } from '@/api';
 
 interface Birthday {
   id: string;
@@ -22,29 +23,20 @@ const Birthday: React.FC = () => {
   useEffect(() => {
     const fetchBirthdays = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/auth/birthdays', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-
+        const data = await authApi.getBirthdays();
         if (data.success) {
-          // Filter users who have a birth_date and map to Birthday interface
           let birthdayList = data.data.users
-            .filter((user: any) => user.birth_date)
-            .map((user: any) => ({
-              id: user.id.toString(),
-              name: `${user.first_name} ${user.last_name}`,
-              date: format(new Date(user.birth_date), 'MMM d'),
-              department: user.department || 'General',
-              email: user.email,
-              branch: user.branch,
-              rawDate: new Date(user.birth_date) // Keep raw date for sorting/filtering
+            .filter((u: any) => u.birth_date)
+            .map((u: any) => ({
+              id: u.id.toString(),
+              name: `${u.first_name} ${u.last_name}`,
+              date: format(new Date(u.birth_date), 'MMM d'),
+              department: u.department || 'General',
+              email: u.email,
+              branch: u.branch,
+              rawDate: new Date(u.birth_date)
             }));
 
-          // Filter by branch if user has a branch assigned
           if (user?.branch) {
             birthdayList = birthdayList.filter((b: any) => b.branch === user.branch);
           }
