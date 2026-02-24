@@ -704,38 +704,21 @@ const EmployeePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Status</Label>
-                <Select
-                  value={editEmployee.status}
-                  onValueChange={(value: 'active' | 'inactive' | 'suspended') => setEditEmployee({ ...editEmployee, status: value })}
-                >
-                  <SelectTrigger className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Branch</Label>
-                <Select
-                  value={editEmployee.branch}
-                  onValueChange={(value) => setEditEmployee({ ...editEmployee, branch: value })}
-                >
-                  <SelectTrigger className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all">
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Guindy">Guindy</SelectItem>
-                    <SelectItem value="Nungambakkam">Nungambakkam</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Status</Label>
+              <Select
+                value={editEmployee.status}
+                onValueChange={(value: 'active' | 'inactive' | 'suspended') => setEditEmployee({ ...editEmployee, status: value })}
+              >
+                <SelectTrigger className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <DialogFooter className="pt-4 gap-3 sm:w-full sm:justify-end">
@@ -841,7 +824,7 @@ const EmployeePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Department</Label>
                 <Input
@@ -859,21 +842,6 @@ const EmployeePage: React.FC = () => {
                   onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
                   className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Branch</Label>
-                <Select
-                  value={newEmployee.branch}
-                  onValueChange={(value) => setNewEmployee({ ...newEmployee, branch: value })}
-                >
-                  <SelectTrigger className="rounded-xl h-12 font-bold bg-slate-50 border-transparent focus:bg-white focus:border-primary/20 transition-all">
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Guindy">Guindy</SelectItem>
-                    <SelectItem value="Nungambakkam">Nungambakkam</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
