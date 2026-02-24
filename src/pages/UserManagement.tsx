@@ -1,5 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { api as apiClient, mediaUrl } from '@/lib/api';
 import { ShieldCheck, UserPlus, Search, Edit2, Trash2, Mail, Building2, Loader2, Key, Phone, User as UserIcon, MapPin, Calendar } from 'lucide-react';
 import {
   Dialog,
@@ -33,6 +35,7 @@ interface User {
   position: string;
   status: string;
   birth_date?: string;
+  last_login?: string;
 }
 
 const UserManagement: React.FC = () => {
@@ -60,13 +63,7 @@ const UserManagement: React.FC = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await apiClient.get<any>('/auth/admin/users');
       if (data.success) {
         setUsers(data.data.users);
       } else {
@@ -74,7 +71,7 @@ const UserManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('Fetch users error:', error);
-      toast.error('Error connecting to server');
+      toast.error(error instanceof Error ? error.message : 'Error connecting to server');
     } finally {
       setIsLoading(false);
     }
@@ -107,26 +104,8 @@ const UserManagement: React.FC = () => {
     e.preventDefault();
     setIsAddingUser(true);
     try {
-      const token = localStorage.getItem('token');
-
-      // If not superadmin, branch is determined by backend based on creator's branch
-      // But we can send it anyway if we want, backend will override or validate
       const payload = { ...formData };
-      if (!isSuperAdmin) {
-        // Optionally remove branch from payload if we want to rely strictly on backend
-        // payload.branch = undefined; 
-      }
-
-      const response = await fetch('http://localhost:5000/api/auth/admin/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
+      const data = await apiClient.post<any>('/auth/admin/users', payload);
 
       if (data.success) {
         toast.success('User created successfully');
@@ -150,10 +129,31 @@ const UserManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('Create user error:', error);
-      toast.error('Error connecting to server');
+      toast.error(error instanceof Error ? error.message : 'Error connecting to server');
     } finally {
       setIsAddingUser(false);
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    try {
+      const data = await apiClient.delete<any>(`/auth/admin/users/${id}`);
+      if (data.success) {
+        toast.success('User deleted successfully');
+        fetchUsers();
+      } else {
+        toast.error(data.message || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error('Delete user error:', error);
+      toast.error(error instanceof Error ? error.message : 'Error connecting to server');
+    }
+  };
+
+  const handleEdit = (user: User) => {
+    // For now, just a toast or basic prep
+    toast.info(`Editing ${user.first_name}... (Feature coming soon)`);
   };
 
   const filteredUsers = users.filter(user =>
@@ -380,6 +380,7 @@ const UserManagement: React.FC = () => {
                   <th className="px-8 pb-4">Role</th>
                   <th className="px-8 pb-4">Department</th>
                   <th className="px-8 pb-4">Status</th>
+                  {isSuperAdmin && <th className="px-8 pb-4">Last Login</th>}
                   <th className="px-8 pb-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -394,6 +395,12 @@ const UserManagement: React.FC = () => {
                         <div>
                           <p className="text-slate-900 font-black tracking-tight">{user.first_name} {user.last_name}</p>
                           <p className="text-slate-400 text-xs font-bold flex items-center gap-1 mt-1">
+                            {user.branch && (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-500 mr-1 uppercase">
+                                <MapPin className="w-2.5 h-2.5" />
+                                {user.branch}
+                              </span>
+                            )}
                             <Mail className="w-3 h-3" />
                             {user.email}
                           </p>
@@ -420,12 +427,33 @@ const UserManagement: React.FC = () => {
                         </span>
                       </div>
                     </td>
+                    {isSuperAdmin && (
+                      <td className="bg-slate-50/50 group-hover:bg-primary/5 px-8 py-6 transition-all">
+                        <div className="flex flex-col gap-1">
+                          <p className="text-slate-900 font-bold text-xs uppercase tracking-tight">
+                            {user.last_login ? format(new Date(user.last_login), 'MMM d, yyyy') : 'Never'}
+                          </p>
+                          {user.last_login && (
+                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              {format(new Date(user.last_login), 'hh:mm a')}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                    )}
                     <td className="bg-slate-50/50 group-hover:bg-primary/5 rounded-r-[1.5rem] px-8 py-6 text-right transition-all">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100">
-                        <button className="p-3 rounded-xl bg-white text-slate-400 hover:text-primary hover:shadow-lg border border-transparent hover:border-slate-100 transition-all">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="p-3 rounded-xl bg-white text-slate-400 hover:text-primary hover:shadow-lg border border-transparent hover:border-slate-100 transition-all"
+                        >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button className="p-3 rounded-xl bg-white text-slate-400 hover:text-red-500 hover:shadow-lg border border-transparent hover:border-slate-100 transition-all">
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          className="p-3 rounded-xl bg-white text-slate-400 hover:text-red-500 hover:shadow-lg border border-transparent hover:border-slate-100 transition-all"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -446,5 +474,22 @@ const UserManagement: React.FC = () => {
     </div>
   );
 };
+
+/* ── Helper Icons ── */
+const Clock = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
 
 export default UserManagement;
