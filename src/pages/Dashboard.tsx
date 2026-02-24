@@ -63,6 +63,9 @@ const Dashboard: React.FC = () => {
   const [currentThought, setCurrentThought] = useState<any>(null);
   const [isLoadingThought, setIsLoadingThought] = useState(true);
 
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
+
   /* ── API calls (unchanged) ── */
   const fetchRecentThought = async () => {
     setIsLoadingThought(true);
@@ -108,11 +111,26 @@ const Dashboard: React.FC = () => {
     } catch { } finally { setIsLoadingBirthdays(false); }
   };
 
+  const fetchAnnouncements = async () => {
+    setIsLoadingAnnouncements(true);
+    try {
+      const data = await apiClient.get<any>('/announcements');
+      // The server returns the array directly or wrapped? 
+      // Based on controller, it return res.json(announcements) which might be just the array
+      if (Array.isArray(data)) {
+        setAnnouncements(data);
+      } else if (data.success && Array.isArray(data.data)) {
+        setAnnouncements(data.data);
+      }
+    } catch { } finally { setIsLoadingAnnouncements(false); }
+  };
+
   useEffect(() => {
     fetchRecentMembers();
     fetchRecentThought();
     fetchRealEvents();
     fetchBirthdays();
+    fetchAnnouncements();
   }, [user?.branch]);
 
   /* ── Carousel state ── */
@@ -597,7 +615,12 @@ const Dashboard: React.FC = () => {
                 <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">Upcoming</p>
               </div>
             </div>
-            <button className="text-[9px] font-black text-pink-500 uppercase tracking-widest hover:underline">View All</button>
+            <button
+              onClick={() => navigate('/misc/birthday')}
+              className="text-[9px] font-black text-pink-500 uppercase tracking-widest hover:underline"
+            >
+              View All
+            </button>
           </div>
 
           <div className="flex-1 space-y-4 overflow-y-auto max-h-[320px] pr-1 custom-scrollbar">
@@ -607,7 +630,7 @@ const Dashboard: React.FC = () => {
                 <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">Checking dates…</p>
               </div>
             ) : birthdays.length > 0 ? (
-              birthdays.map((bday, i) => (
+              birthdays.slice(0, 5).map((bday, i) => (
                 <div key={i} className="flex items-center gap-3 group/b cursor-pointer p-2 rounded-2xl hover:bg-pink-50 dark:hover:bg-pink-900/10 transition-colors">
                   <Avatar className="w-11 h-11 border-2 border-slate-50 dark:border-slate-700 shadow-sm group-hover/b:scale-110 transition-transform ring-1 ring-pink-100 dark:ring-pink-900/30">
                     {bday.photo && <AvatarImage src={mediaUrl(bday.photo)} />}
@@ -641,8 +664,9 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* ── Announcements ── */}
-        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-7 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-5 relative overflow-hidden">
-          <div className="flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-7 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-5 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-500/3 to-transparent pointer-events-none rounded-[2.5rem]" />
+          <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500">
                 <Bell className="w-5 h-5" />
@@ -658,16 +682,54 @@ const Dashboard: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center py-10 text-center gap-4 opacity-40">
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700">
-              <Bell className="w-8 h-8 text-slate-300 dark:text-slate-500" />
-            </div>
-            <p className="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-widest">No new announcements</p>
+          <div className="flex-1 overflow-y-auto max-h-[300px] pr-1 space-y-4 custom-scrollbar z-10">
+            {isLoadingAnnouncements ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <Loader2 className="w-7 h-7 text-red-500 animate-spin" />
+                <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">Fetching data…</p>
+              </div>
+            ) : announcements.length > 0 ? (
+              announcements.slice(0, 5).map((ann, i) => (
+                <div
+                  key={ann.id}
+                  onClick={() => navigate('/misc/announcements')}
+                  className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-600/50 hover:border-red-200 dark:hover:border-red-900/50 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer group/ann"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={cn(
+                      "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest",
+                      ann.priority === 'Urgent' ? "bg-red-600 text-white animate-pulse" :
+                        ann.priority === 'High' ? "bg-orange-500 text-white" :
+                          "bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-300"
+                    )}>
+                      {ann.priority}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {ann.publish_at ? format(new Date(ann.publish_at), 'MMM d, yyyy') : format(new Date(ann.created_at), 'MMM d, yyyy')}
+                    </span>
+                  </div>
+                  <h4 className="text-slate-900 dark:text-white font-black text-[13px] leading-snug line-clamp-1 group-hover/ann:text-red-500 transition-colors">
+                    {ann.title}
+                  </h4>
+                  <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed line-clamp-2 mt-1 font-medium">
+                    {ann.content}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center gap-4 opacity-40">
+                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700">
+                  <Bell className="w-8 h-8 text-slate-300 dark:text-slate-500" />
+                </div>
+                <p className="text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-widest">No new announcements</p>
+              </div>
+            )}
           </div>
 
-          <button disabled
-            className="mt-auto py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700 text-slate-300 dark:text-slate-600 font-black text-[10px] uppercase tracking-widest cursor-not-allowed">
-            No More Announcements
+          <button
+            onClick={() => navigate('/misc/announcements')}
+            className="mt-auto py-3.5 rounded-2xl bg-slate-900 dark:bg-slate-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-red-500 transition-all shadow-lg shadow-slate-900/20 active:scale-95 z-10">
+            View All Updates
           </button>
         </div>
       </div>

@@ -20,7 +20,7 @@ class HRPolicy {
     static async findAll() {
         try {
             const [rows] = await db.query(
-                `SELECT p.*, u.first_name, u.last_name 
+                `SELECT p.*, p.createdAt AS created_at, p.updatedAt AS updated_at, u.first_name, u.last_name 
          FROM hr_policies p 
          LEFT JOIN users u ON p.created_by = u.id 
          ORDER BY p.effective_date DESC`
@@ -35,7 +35,7 @@ class HRPolicy {
     static async findById(id) {
         try {
             const [rows] = await db.query(
-                `SELECT p.*, u.first_name, u.last_name 
+                `SELECT p.*, p.createdAt AS created_at, p.updatedAt AS updated_at, u.first_name, u.last_name 
          FROM hr_policies p 
          LEFT JOIN users u ON p.created_by = u.id 
          WHERE p.id = ?`,
