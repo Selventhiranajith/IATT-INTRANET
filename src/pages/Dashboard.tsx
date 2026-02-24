@@ -527,79 +527,72 @@ const Dashboard: React.FC = () => {
 
         {/* ── Recent Members ── */}
         <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-7 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-5 group relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/3 to-transparent pointer-events-none rounded-[2.5rem]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/3 to-transparent pointer-events-none rounded-[2.5rem]" />
           <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <UserCheck className="w-5 h-5" />
+              <div className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-500">
+                <Users2 className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-slate-900 dark:text-white font-black text-base tracking-tight">Recent Members</h3>
                 <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">Newly joined</p>
               </div>
             </div>
-            <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 text-[9px] font-black uppercase tracking-widest rounded-full border border-emerald-100 dark:border-emerald-800">New</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[9px] font-black uppercase tracking-widest">New</span>
+            </div>
           </div>
 
-          {isLoadingMembers ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
-              <Loader2 className="w-7 h-7 text-primary animate-spin" />
-              <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">Loading…</p>
-            </div>
-          ) : recentMembers.length > 0 ? (
-            <Carousel opts={{ align: "start", loop: true }} plugins={[Autoplay({ delay: 4000 })]} className="w-full flex-1">
-              <CarouselContent>
-                {recentMembers.map((member, i) => (
-                  <CarouselItem key={i}>
-                    <div className="flex flex-col gap-5">
-                      {/* Avatar row */}
-                      <div className="flex items-center gap-4 pb-5 border-b border-slate-100 dark:border-slate-700">
-                        <Avatar className="w-16 h-16 border-4 border-slate-50 dark:border-slate-700 shadow-md group-hover:scale-105 transition-transform ring-2 ring-primary/20">
-                          {member.photo && <AvatarImage src={mediaUrl(member.photo)} />}
-                          <AvatarFallback className="bg-primary/10 text-primary font-black text-lg">
-                            {member.first_name[0]}{member.last_name[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h4 className="text-slate-900 dark:text-white font-black text-lg tracking-tight leading-tight">
-                            {member.first_name} {member.last_name}
-                          </h4>
-                          <p className="text-primary font-bold text-[10px] uppercase tracking-widest mt-1 opacity-80">
-                            {member.position || 'Staff'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        {[
-                          { label: 'Email', value: member.email },
-                          { label: 'Role', value: member.position || 'Staff' },
-                          { label: 'Joined', value: new Date(member.created_at).toLocaleDateString() },
-                        ].map((item, j) => (
-                          <div key={j} className="flex items-center justify-between">
-                            <span className="text-slate-400 dark:text-slate-500 font-bold text-xs">{item.label}</span>
-                            <span className="text-slate-800 dark:text-slate-200 font-black text-xs truncate max-w-[140px]">{item.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <div className="flex justify-between items-center mt-5 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <div className="flex gap-2">
-                  <CarouselPrevious className="relative h-8 w-8 -left-0 translate-y-0 border-slate-100 dark:border-slate-700 hover:bg-primary hover:text-white transition-all" />
-                  <CarouselNext className="relative h-8 w-8 -right-0 translate-y-0 border-slate-100 dark:border-slate-700 hover:bg-primary hover:text-white transition-all" />
-                </div>
-                <button className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-400 hover:text-primary transition-all">
-                  <Send className="w-4 h-4" />
-                </button>
+          <div className="flex-1 space-y-4 overflow-y-auto max-h-[320px] pr-1 custom-scrollbar z-10">
+            {isLoadingMembers ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <Loader2 className="w-7 h-7 text-orange-500 animate-spin" />
+                <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">Loading members…</p>
               </div>
-            </Carousel>
-          ) : (
-            <div className="flex-1 flex items-center justify-center py-10">
-              <p className="text-slate-400 text-xs font-bold">No recent members found.</p>
-            </div>
-          )}
+            ) : recentMembers.length > 0 ? (
+              recentMembers.slice(0, 4).map((member, i) => (
+                <div key={i} className="flex items-center gap-3 group/m cursor-pointer p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-600/50 hover:bg-white dark:hover:bg-slate-700 hover:shadow-lg transition-all">
+                  <Avatar className="w-11 h-11 border-2 border-slate-50 dark:border-slate-700 shadow-sm group-hover/m:scale-105 transition-transform ring-1 ring-orange-100 dark:ring-orange-900/30">
+                    {member.photo && <AvatarImage src={mediaUrl(member.photo)} />}
+                    <AvatarFallback className="bg-orange-50 dark:bg-orange-900/20 text-orange-500 font-black text-sm">
+                      {member.first_name[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-slate-900 dark:text-white font-black text-sm truncate group-hover/m:text-orange-500 transition-colors">
+                      {member.first_name} {member.last_name}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{member.department || 'Staff'}</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                      <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">{member.position || 'Member'}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="flex items-center gap-1 text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 justify-end">
+                      <Calendar className="w-2.5 h-2.5" /> Join
+                    </div>
+                    <p className="text-slate-900 dark:text-white font-black text-[10px] leading-none">
+                      {new Date(member.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 opacity-40">
+                <Users2 className="w-8 h-8 text-slate-300 mb-2" />
+                <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">No recent members</p>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => navigate('/admin/users')}
+            className="mt-auto py-3.5 rounded-2xl bg-slate-900 dark:bg-slate-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-500 transition-all shadow-lg shadow-slate-900/20 active:scale-95 z-10"
+          >
+            View All Members
+          </button>
         </div>
 
         {/* ── Upcoming Birthdays ── */}
