@@ -419,9 +419,9 @@ const ManualAttendance: React.FC = () => {
                 {isLoading ? (
                   <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
                 ) : status === 'inactive' ? (
-                  <><LogIn className="w-4 h-4" /> Confirm Check In</>
+                  <><LogIn className="w-4 h-4" /> Check In</>
                 ) : (
-                  <><LogOut className="w-4 h-4" /> Confirm Check Out</>
+                  <><LogOut className="w-4 h-4" /> heck Out</>
                 )}
               </button>
             </div>

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Menu, 
-  Maximize2, 
-  Minimize2, 
-  User, 
-  Settings, 
+import {
+  Menu,
+  Maximize2,
+  Minimize2,
+  User,
+  Settings,
   LogOut,
   Bell,
   ChevronDown,
@@ -75,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     <header className="bg-white h-24 border-b border-slate-100 sticky top-0 z-40 flex flex-col shrink-0">
       {/* Top Gradient Line */}
       <div className="h-1.5 w-full bg-gradient-to-r from-secondary to-yellow-400 shrink-0" />
-      
+
       <div className="flex-1 px-8 flex items-center justify-between">
         {/* Left Section - Toggle & Logo */}
         <div className="flex items-center gap-6">
@@ -85,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           >
             <Menu className="w-5 h-5" />
           </button>
-          
+
         </div>
 
         {/* Middle Section - Search & Time */}
@@ -102,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
         {/* Right Section - Fullscreen, Time, Notifications & User */}
         <div className="flex items-center gap-6">
-          
+
 
           {/* Time Display with Popover */}
           <Popover>
@@ -127,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
                 {/* Calendar Section */}
                 <div className="p-2 bg-slate-50 rounded-[2rem] border border-slate-100">
-                  <Calendar 
+                  <Calendar
                     mode="single"
                     selected={currentTime}
                     className="rounded-[1.5rem]"
@@ -138,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </Popover>
 
           {/* Fullscreen Button */}
-          <button 
+          <button
             onClick={toggleFullscreen}
             className="p-3 rounded-2xl text-slate-400 hover:text-primary hover:bg-slate-50 transition-all"
             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
@@ -147,12 +147,12 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </button>
 
           <div className="flex items-center gap-2 pl-6 border-l border-slate-100">
-             <button className="p-3 rounded-2xl text-slate-400 hover:text-primary hover:bg-slate-50 transition-all relative">
-               <Bell className="w-5 h-5" />
-               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 border-2 border-white rounded-full"></span>
-             </button>
-             
-             
+            <button className="p-3 rounded-2xl text-slate-400 hover:text-primary hover:bg-slate-50 transition-all relative">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 border-2 border-white rounded-full"></span>
+            </button>
+
+
           </div>
 
 
@@ -183,10 +183,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                   <span className="text-[10px] text-primary font-black uppercase tracking-widest">{user?.branch}</span>
                 </div>
               </div>
-              <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer rounded-xl py-4 px-6 text-slate-600 font-bold hover:bg-slate-50">
-                <User className="w-4 h-4 mr-3 text-primary" />
-                Account Settings
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={logout} className="cursor-pointer rounded-xl py-4 px-6 text-red-500 font-bold hover:bg-red-50 mt-1">
                 <LogOut className="w-4 h-4 mr-3" />
                 Sign Out

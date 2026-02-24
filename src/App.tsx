@@ -28,7 +28,6 @@ import Thoughts from "./pages/Thoughts";
 import Announcements from "./pages/Announcements";
 import Holidays from "./pages/Holidays";
 import Birthday from "./pages/Birthday";
-import AccountSettings from "./pages/AccountSettings";
 import UserManagement from "./pages/UserManagement";
 import SystemSettings from "./pages/SystemSettings";
 import NotFound from "./pages/NotFound";
@@ -138,8 +137,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
 
-        {/* Account Settings */}
-        <Route path="settings" element={<AccountSettings />} />
       </Route>
 
       {/* 404 */}
