@@ -9,6 +9,9 @@ const upload = require('../middleware/upload.middleware');
 // 1. Get all events
 router.get('/', verifyToken, eventController.getAllEvents);
 
+// 1.1 Get event by id
+router.get('/:id', verifyToken, eventController.getEventById);
+
 // 2. Create event (Admin/SuperAdmin only) - supports multiple images
 router.post('/', verifyToken, isAdminOrSuperAdmin, upload.array('images', 10), eventController.createEvent);
 

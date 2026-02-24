@@ -85,6 +85,25 @@ class Event {
             throw error;
         }
     }
+
+    // Get single event by id
+    static async findById(id) {
+        try {
+            await db.query('SET SESSION group_concat_max_len = 10000');
+            const [rows] = await db.query(`
+                SELECT e.*, u.first_name, u.last_name,
+                GROUP_CONCAT(ei.image_url) as all_images
+                FROM events e
+                LEFT JOIN users u ON e.created_by = u.id
+                LEFT JOIN event_images ei ON e.id = ei.event_id
+                WHERE e.id = ?
+                GROUP BY e.id
+            `, [id]);
+            return rows.length > 0 ? rows[0] : null;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 module.exports = Event;

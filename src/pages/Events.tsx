@@ -5,6 +5,7 @@ import {
   Image as ImageIcon, Sparkles, ArrowRight, ZoomIn
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +65,7 @@ const FieldGroup: React.FC<{ label: string; children: React.ReactNode; className
 /* ─── Main Component ─── */
 const Events: React.FC = () => {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
@@ -412,7 +414,7 @@ const Events: React.FC = () => {
                           <div className="w-7 h-7 rounded-full bg-white/10 border-2 border-slate-900 flex items-center justify-center text-white text-[9px] font-black">+</div>
                         </div>
                         <button
-                          onClick={() => openGallery(nextEvent.images_full || (nextEvent.image_url ? [nextEvent.image_url] : []))}
+                          onClick={() => navigate(`/events/gallery/${nextEvent.id}`, { state: { event: nextEvent } })}
                           className="text-[10px] font-black text-orange-400 hover:text-orange-300 uppercase tracking-wider flex items-center gap-1 transition-colors"
                         >
                           View <ArrowRight className="w-3 h-3" />
@@ -463,7 +465,7 @@ const Events: React.FC = () => {
                 {/* ── Thumbnail ── */}
                 <div
                   className="relative h-56 overflow-hidden cursor-pointer bg-slate-100 dark:bg-slate-700 shrink-0"
-                  onClick={() => openGallery(allImages)}
+                  onClick={() => navigate(`/events/gallery/${event.id}`, { state: { event } })}
                 >
                   {/* Hover overlay */}
                   <div className="absolute inset-0 z-20 bg-black/0 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -576,7 +578,7 @@ const Events: React.FC = () => {
                       <div className="w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-400 -ml-2" />
                     </div>
                     <button
-                      onClick={() => openGallery(allImages)}
+                      onClick={() => navigate(`/events/gallery/${event.id}`, { state: { event } })}
                       className="flex items-center gap-1.5 text-xs font-black text-orange-500 hover:text-orange-600 uppercase tracking-wider group/btn transition-colors"
                     >
                       View Gallery

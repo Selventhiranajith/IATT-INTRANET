@@ -135,6 +135,47 @@ exports.getAllEvents = async (req, res) => {
     }
 };
 
+// Get single event by ID
+exports.getEventById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const event = await Event.findById(id);
+
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+        const imageArray = event.all_images ? event.all_images.split(',') : [];
+        const uniqueImages = [...new Set(imageArray)];
+
+        const formattedEvent = {
+            ...event,
+            images: uniqueImages,
+            // Ensure image_url is fully qualified if relative
+            image_url: event.image_url ? (event.image_url.startsWith('http') ? event.image_url : `http://localhost:5000${event.image_url}`) : null,
+            // Also format the images array with full URLs
+            images_full: uniqueImages.map(img => img.startsWith('http') ? img : `http://localhost:5000${img}`),
+            image_type: event.image_url ? (event.image_url.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image') : 'image'
+        };
+
+        res.status(200).json({
+            success: true,
+            data: formattedEvent
+        });
+    } catch (error) {
+        console.error('Get event error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching event',
+            error: error.message
+        });
+    }
+};
+
+
 // Delete event
 exports.deleteEvent = async (req, res) => {
     try {

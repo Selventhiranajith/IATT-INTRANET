@@ -28,6 +28,7 @@ import Thoughts from "./pages/Thoughts";
 import Announcements from "./pages/Announcements";
 import Holidays from "./pages/Holidays";
 import Birthday from "./pages/Birthday";
+import EventGallery from "./pages/EventGallery";
 import UserManagement from "./pages/UserManagement";
 import SystemSettings from "./pages/SystemSettings";
 import NotFound from "./pages/NotFound";
@@ -124,6 +125,7 @@ const AppRoutes = () => {
         <Route path="misc/announcements" element={<Announcements />} />
         <Route path="misc/holidays" element={<Holidays />} />
         <Route path="misc/birthday" element={<Birthday />} />
+        <Route path="events/gallery/:id" element={<EventGallery />} />
 
         {/* System Administration (SuperAdmin Only) */}
         <Route path="admin/users" element={
