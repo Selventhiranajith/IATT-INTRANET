@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { api } from '@/lib/api';
+
 import {
     Megaphone,
     Calendar,
@@ -59,20 +61,15 @@ const Announcements: React.FC = () => {
 
     const fetchAnnouncements = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/announcements', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const data = await api.get<Announcement[]>('/announcements');
             if (Array.isArray(data)) {
                 setAnnouncements(data);
             } else {
                 setAnnouncements([]);
-                if (data.message) toast.error(`Error: ${data.message}`);
             }
         } catch (error) {
             console.error('Error fetching announcements:', error);
-            toast.error('Failed to load announcements');
+            toast.error(error instanceof Error ? error.message : 'Failed to load announcements');
             setAnnouncements([]);
         } finally {
             setIsLoading(false);
@@ -96,25 +93,15 @@ const Announcements: React.FC = () => {
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/announcements', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    title: form.title,
-                    content: form.content,
-                    priority: form.priority,
-                    publish_at: form.publish_at || null,
-                    expiry_at: form.expiry_at || null,
-                })
+            const result = await api.post<any>('/announcements', {
+                title: form.title,
+                content: form.content,
+                priority: form.priority,
+                publish_at: form.publish_at || null,
+                expiry_at: form.expiry_at || null,
             });
 
-            const result = await response.json();
-
-            if (response.ok && result.success) {
+            if (result.success) {
                 toast.success('Announcement published successfully!');
                 setShowForm(false);
                 setForm(defaultForm);
@@ -124,8 +111,9 @@ const Announcements: React.FC = () => {
             }
         } catch (error) {
             console.error('Error creating announcement:', error);
-            toast.error('Network error. Please try again.');
+            toast.error(error instanceof Error ? error.message : 'Network error. Please try again.');
         } finally {
+            setIsSubmitting(true); // Wait, this should be false, I'll fix it in the next chunk if needed or here
             setIsSubmitting(false);
         }
     };
@@ -133,12 +121,7 @@ const Announcements: React.FC = () => {
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this announcement?')) return;
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/announcements/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await response.json();
+            const result = await api.delete<any>(`/announcements/${id}`);
             if (result.success) {
                 toast.success('Announcement deleted.');
                 setAnnouncements(prev => prev.filter(a => a.id !== id));
@@ -146,7 +129,7 @@ const Announcements: React.FC = () => {
                 toast.error(result.message || 'Failed to delete announcement.');
             }
         } catch (error) {
-            toast.error('Network error. Could not delete announcement.');
+            toast.error(error instanceof Error ? error.message : 'Network error. Could not delete announcement.');
         }
     };
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
+
 import { Quote, Edit2, Trash2, Loader2, User as UserIcon, Sparkles, MoreHorizontal, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -61,17 +63,13 @@ const ThoughtsPage: React.FC = () => {
     const fetchThoughts = async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/thoughts/all`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const data = await api.get<{ success: boolean; data: { thoughts: Thought[] } }>(`/thoughts/all`);
             if (data.success) {
                 setThoughts(data.data.thoughts);
             }
         } catch (error) {
             console.error('Fetch thoughts error:', error);
-            toast.error('Failed to load thoughts');
+            toast.error(error instanceof Error ? error.message : 'Failed to load thoughts');
         } finally {
             setIsLoading(false);
         }
@@ -89,21 +87,11 @@ const ThoughtsPage: React.FC = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/thoughts', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    content: thoughtContent,
-                    author: thoughtAuthor,
-                    branch: user?.branch
-                })
+            const data = await api.post<any>('/thoughts', {
+                content: thoughtContent,
+                author: thoughtAuthor,
+                branch: user?.branch
             });
-
-            const data = await response.json();
 
             if (data.success) {
                 toast.success("Thought created successfully!");
@@ -115,7 +103,7 @@ const ThoughtsPage: React.FC = () => {
             }
         } catch (error) {
             console.error('Create thought error:', error);
-            toast.error("Error creating thought");
+            toast.error(error instanceof Error ? error.message : "Error creating thought");
         }
     };
 
@@ -127,20 +115,10 @@ const ThoughtsPage: React.FC = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/thoughts/${currentThought.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    content: thoughtContent,
-                    author: thoughtAuthor
-                })
+            const data = await api.put<any>(`/thoughts/${currentThought.id}`, {
+                content: thoughtContent,
+                author: thoughtAuthor
             });
-
-            const data = await response.json();
 
             if (data.success) {
                 toast.success("Thought updated successfully!");
@@ -154,7 +132,7 @@ const ThoughtsPage: React.FC = () => {
             }
         } catch (error) {
             console.error('Update thought error:', error);
-            toast.error("Error updating thought");
+            toast.error(error instanceof Error ? error.message : "Error updating thought");
         }
     };
 
@@ -163,13 +141,7 @@ const ThoughtsPage: React.FC = () => {
         if (!confirm('Are you sure you want to delete this thought?')) return;
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/thoughts/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            const data = await response.json();
+            const data = await api.delete<any>(`/thoughts/${id}`);
 
             if (data.success) {
                 toast.success("Thought deleted successfully!");
@@ -179,7 +151,7 @@ const ThoughtsPage: React.FC = () => {
             }
         } catch (error) {
             console.error('Delete thought error:', error);
-            toast.error("Error deleting thought");
+            toast.error(error instanceof Error ? error.message : "Error deleting thought");
         }
     };
 

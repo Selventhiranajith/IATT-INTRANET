@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
+import { api as apiClient, mediaUrl } from '@/lib/api';
+
+
 import {
   Quote, Calendar, Users, Building2, Cake, Gift, Check, X,
   PartyPopper, TrendingUp, Clock, UserCheck, Loader2, Settings,
@@ -29,8 +32,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 /* ─── helpers ─── */
-const mediaUrl = (src: string) =>
-  src?.startsWith('http') || src?.startsWith('blob:') ? src : `http://localhost:5000${src}`;
 
 const getEventStatus = (dateStr: string) => {
   try {
@@ -66,19 +67,14 @@ const Dashboard: React.FC = () => {
   const fetchRecentThought = async () => {
     setIsLoadingThought(true);
     try {
-      const token = localStorage.getItem('token');
       const url = user?.branch
-        ? `http://localhost:5000/api/thoughts/branch/${user.branch}`
-        : `http://localhost:5000/api/thoughts/all`;
-      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await response.json();
+        ? `/thoughts/branch/${user.branch}`
+        : `/thoughts/all`;
+      const data = await apiClient.get<any>(url);
       if (data.success && data.data.thoughts?.length > 0) {
         setCurrentThought(data.data.thoughts[0]);
       } else {
-        const rr = await fetch(`http://localhost:5000/api/thoughts/random/${user?.branch || 'all'}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const rd = await rr.json();
+        const rd = await apiClient.get<any>(`/thoughts/random/${user?.branch || 'all'}`);
         setCurrentThought(rd.success && rd.data.thought
           ? rd.data.thought
           : { content: 'Success is not final, failure is not fatal: it is the courage to continue that counts.', author: 'Winston Churchill' }
@@ -91,9 +87,7 @@ const Dashboard: React.FC = () => {
 
   const fetchRecentMembers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/auth/recent-joined', { headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await res.json();
+      const data = await apiClient.get<any>('/auth/recent-joined');
       if (data.success) setRecentMembers(data.data.users);
     } catch { } finally { setIsLoadingMembers(false); }
   };
@@ -101,9 +95,7 @@ const Dashboard: React.FC = () => {
   const fetchRealEvents = async () => {
     setIsLoadingEvents(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/events', { headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await res.json();
+      const data = await apiClient.get<any>('/events');
       if (data.success) setRealEvents(data.data);
     } catch { } finally { setIsLoadingEvents(false); }
   };
@@ -111,9 +103,7 @@ const Dashboard: React.FC = () => {
   const fetchBirthdays = async () => {
     setIsLoadingBirthdays(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/auth/birthdays', { headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await res.json();
+      const data = await apiClient.get<any>('/auth/birthdays');
       if (data.success) setBirthdays(data.data.users);
     } catch { } finally { setIsLoadingBirthdays(false); }
   };
@@ -408,7 +398,7 @@ const Dashboard: React.FC = () => {
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
                             {event.image_url ? (
                               <img
-                                src={event.image_url.startsWith('http') ? event.image_url : `http://localhost:5000${event.image_url}`}
+                                src={mediaUrl(event.image_url)}
                                 alt={event.title}
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                               />
@@ -547,7 +537,7 @@ const Dashboard: React.FC = () => {
                       {/* Avatar row */}
                       <div className="flex items-center gap-4 pb-5 border-b border-slate-100 dark:border-slate-700">
                         <Avatar className="w-16 h-16 border-4 border-slate-50 dark:border-slate-700 shadow-md group-hover:scale-105 transition-transform ring-2 ring-primary/20">
-                          {member.photo && <AvatarImage src={`http://localhost:5000${member.photo}`} />}
+                          {member.photo && <AvatarImage src={mediaUrl(member.photo)} />}
                           <AvatarFallback className="bg-primary/10 text-primary font-black text-lg">
                             {member.first_name[0]}{member.last_name[0]}
                           </AvatarFallback>
@@ -620,7 +610,7 @@ const Dashboard: React.FC = () => {
               birthdays.map((bday, i) => (
                 <div key={i} className="flex items-center gap-3 group/b cursor-pointer p-2 rounded-2xl hover:bg-pink-50 dark:hover:bg-pink-900/10 transition-colors">
                   <Avatar className="w-11 h-11 border-2 border-slate-50 dark:border-slate-700 shadow-sm group-hover/b:scale-110 transition-transform ring-1 ring-pink-100 dark:ring-pink-900/30">
-                    {bday.photo && <AvatarImage src={`http://localhost:5000${bday.photo}`} />}
+                    {bday.photo && <AvatarImage src={mediaUrl(bday.photo)} />}
                     <AvatarFallback className="bg-pink-50 dark:bg-pink-900/20 text-pink-500 font-black text-sm">
                       {bday.first_name[0]}
                     </AvatarFallback>

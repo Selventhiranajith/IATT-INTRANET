@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'react-toastify';
 import { format, isPast, isToday } from 'date-fns';
+import { api, mediaUrl } from '@/lib/api';
+
 
 /* ─── Types ─── */
 interface EventImage {
@@ -36,8 +38,6 @@ interface Event {
 }
 
 /* ─── Helpers ─── */
-const mediaUrl = (src: string) =>
-  src.startsWith('http') || src.startsWith('blob:') ? src : `http://localhost:5000${src}`;
 
 const isVideo = (src: string) =>
   src?.endsWith('.mp4') || src?.endsWith('.webm') || src?.endsWith('.mov');
@@ -87,15 +87,11 @@ const Events: React.FC = () => {
   /* ── API ── */
   const fetchEvents = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/events', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.get<any>('/events');
       if (data.success) setEvents(data.data);
       else toast.error('Failed to load events');
-    } catch {
-      toast.error('Error connecting to server');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error connecting to server');
     } finally {
       setIsLoading(false);
     }
@@ -132,17 +128,15 @@ const Events: React.FC = () => {
   const handleDeleteExistingImage = async (imageId: number) => {
     if (!confirm('Remove this image?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/events/image/${imageId}`, {
-        method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.delete<any>(`/events/image/${imageId}`);
       if (data.success) {
         toast.success('Image removed');
         if (currentEvent) setCurrentEvent({ ...currentEvent, images: currentEvent.images?.filter(img => img.id !== imageId) });
         fetchEvents();
       } else toast.error(data.message);
-    } catch { toast.error('Error removing image'); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error removing image');
+    }
   };
 
   const buildFormData = () => {
@@ -160,16 +154,19 @@ const Events: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
       const fd = buildFormData();
       fd.append('cover_index', coverIndex.toString());
-      const res = await fetch('http://localhost:5000/api/events', {
-        method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd
-      });
-      const data = await res.json();
-      if (data.success) { toast.success('Event created!'); setIsAddModalOpen(false); resetForm(); fetchEvents(); }
+      const data = await api.post<any>('/events', fd);
+      if (data.success) {
+        toast.success('Event created!');
+        setIsAddModalOpen(false);
+        resetForm();
+        fetchEvents();
+      }
       else toast.error(data.message || 'Failed to create event');
-    } catch { toast.error('Error connecting to server'); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error connecting to server');
+    }
     finally { setIsSubmitting(false); }
   };
 
@@ -178,28 +175,29 @@ const Events: React.FC = () => {
     if (!currentEvent) return;
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/events/${currentEvent.id}`, {
-        method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: buildFormData()
-      });
-      const data = await res.json();
-      if (data.success) { toast.success('Event updated!'); setIsEditModalOpen(false); resetForm(); fetchEvents(); }
+      const data = await api.put<any>(`/events/${currentEvent.id}`, buildFormData());
+      if (data.success) {
+        toast.success('Event updated!');
+        setIsEditModalOpen(false);
+        resetForm();
+        fetchEvents();
+      }
       else toast.error(data.message || 'Failed to update event');
-    } catch { toast.error('Error connecting to server'); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error connecting to server');
+    }
     finally { setIsSubmitting(false); }
   };
 
   const handleDeleteEvent = async (id: number) => {
     if (!confirm('Delete this event?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/events/${id}`, {
-        method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.delete<any>(`/events/${id}`);
       if (data.success) { toast.success('Event deleted'); fetchEvents(); }
       else toast.error(data.message || 'Failed to delete');
-    } catch { toast.error('Error deleting event'); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error deleting event');
+    }
   };
 
   const resetForm = () => {

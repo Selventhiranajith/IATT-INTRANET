@@ -8,6 +8,7 @@ module.exports = {
     // Bcrypt salt rounds
     saltRounds: 10,
 
+
     // Token types
     tokenTypes: {
         ACCESS: 'access',

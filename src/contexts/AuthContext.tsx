@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { api } from '@/lib/api';
+
 
 // Map backend roles to frontend roles
 // Backend: 'superadmin', 'admin', 'employee', 'manager', 'hr'
@@ -30,8 +32,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const API_URL = 'http://localhost:5000/api/auth';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -68,22 +68,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const response = await fetch(`${API_URL}/me`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            // Default branch for restored session
+          const data = await api.get<any>('/auth/me');
+          if (data.success) {
             setUser(mapUser(data.data.user));
           } else {
-            // Token invalid or expired
             localStorage.removeItem('token');
           }
         } catch (error) {
-          // console.error('Auth initialization error:', error);
           localStorage.removeItem('token');
         }
       }
@@ -95,23 +86,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string, branch: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, branch }),
-      });
+      const data = await api.post<any>('/auth/login', { email, password, branch });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data.success) {
         const { token, user: backendUser } = data.data;
-
-        // Save token
         localStorage.setItem('token', token);
-
-        // Update user state
         setUser(mapUser(backendUser));
         return true;
       }

@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
+
 import { Eye, EyeOff, LogIn, Loader2, ArrowLeft, KeyRound, Mail, Lock, Building2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
-const API_URL = 'http://localhost:5000/api/auth';
+
+
 
 type ViewState = 'login' | 'forgot-email' | 'forgot-otp' | 'forgot-new-password';
 
@@ -49,12 +52,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail })
-      });
-      const data = await response.json();
+      const data = await api.post<any>('/auth/forgot-password', { email: resetEmail });
 
       if (data.success) {
         setGeneratedOtp(data.data.otp);
@@ -64,7 +62,7 @@ const Login: React.FC = () => {
         toast.error(`Error: ${data.message}`);
       }
     } catch (error) {
-      toast.error('Network Error: Could not connect to server.');
+      toast.error(error instanceof Error ? error.message : 'Network Error: Could not connect to server.');
     } finally {
       setIsLoading(false);
     }
@@ -74,12 +72,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail, otp: resetOtp })
-      });
-      const data = await response.json();
+      const data = await api.post<any>('/auth/verify-otp', { email: resetEmail, otp: resetOtp });
 
       if (data.success) {
         setView('forgot-new-password');
@@ -88,7 +81,7 @@ const Login: React.FC = () => {
         toast.error(`Invalid OTP: ${data.message}`);
       }
     } catch (error) {
-      toast.error('Network Error');
+      toast.error(error instanceof Error ? error.message : 'Network Error');
     } finally {
       setIsLoading(false);
     }
@@ -98,12 +91,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail, otp: resetOtp, newPassword })
-      });
-      const data = await response.json();
+      const data = await api.post<any>('/auth/reset-password', { email: resetEmail, otp: resetOtp, newPassword });
 
       if (data.success) {
         toast.success('Success: Password reset successfully. Please login.');
@@ -116,7 +104,7 @@ const Login: React.FC = () => {
         toast.error(`Error: ${data.message}`);
       }
     } catch (error) {
-      toast.error('Network Error');
+      toast.error(error instanceof Error ? error.message : 'Network Error');
     } finally {
       setIsLoading(false);
     }
