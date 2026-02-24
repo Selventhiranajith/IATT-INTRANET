@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, LogIn, Loader2, ArrowLeft, KeyRound, Mail, Lock, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 
 const API_URL = 'http://localhost:5000/api/auth';
 
@@ -33,19 +33,13 @@ const Login: React.FC = () => {
     try {
       const success = await login(email, password, branch);
       if (success) {
-        toast.success(`Welcome, ${branch === 'Guindy' ? 'IAT Technologies' : branch === 'Nungambakkam' ? 'IAT Solutions' : 'back!'}`, {
-          description: `Successfully logged in to ${branch} branch.`,
-        });
+        toast.success(`Welcome, ${branch === 'Guindy' ? 'IAT Technologies' : branch === 'Nungambakkam' ? 'IAT Solutions' : 'back!'} (Successfully logged in to ${branch} branch.)`);
         navigate('/dashboard');
       } else {
-        toast.error('Login failed', {
-          description: 'Invalid email or password. Please try again.',
-        });
+        toast.error('Login failed: Invalid email or password. Please try again.');
       }
     } catch {
-      toast.error('An error occurred', {
-        description: 'Please try again later.',
-      });
+      toast.error('An error occurred: Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -65,14 +59,12 @@ const Login: React.FC = () => {
       if (data.success) {
         setGeneratedOtp(data.data.otp);
         setView('forgot-otp');
-        toast.success('OTP Generated', {
-          description: 'Please check the notification for your OTP.',
-        });
+        toast.success('OTP Generated: Please check the notification for your OTP.');
       } else {
-        toast.error('Error', { description: data.message });
+        toast.error(`Error: ${data.message}`);
       }
     } catch (error) {
-      toast.error('Network Error', { description: 'Could not connect to server.' });
+      toast.error('Network Error: Could not connect to server.');
     } finally {
       setIsLoading(false);
     }
@@ -91,9 +83,9 @@ const Login: React.FC = () => {
 
       if (data.success) {
         setView('forgot-new-password');
-        toast.success('Verified', { description: 'OTP verified successfully.' });
+        toast.success('Verified: OTP verified successfully.');
       } else {
-        toast.error('Invalid OTP', { description: data.message });
+        toast.error(`Invalid OTP: ${data.message}`);
       }
     } catch (error) {
       toast.error('Network Error');
@@ -114,14 +106,14 @@ const Login: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Success', { description: 'Password reset successfully. Please login.' });
+        toast.success('Success: Password reset successfully. Please login.');
         setView('login');
         setResetEmail('');
         setResetOtp('');
         setNewPassword('');
         setGeneratedOtp('');
       } else {
-        toast.error('Error', { description: data.message });
+        toast.error(`Error: ${data.message}`);
       }
     } catch (error) {
       toast.error('Network Error');

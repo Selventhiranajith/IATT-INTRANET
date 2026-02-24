@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Files, 
-  Search, 
-  Upload, 
-  Download, 
-  Folder, 
-  FileText, 
-  FileImage, 
-  FileSpreadsheet, 
-  Trash2, 
-  MoreVertical, 
-  Eye 
+import {
+  Files,
+  Search,
+  Upload,
+  Download,
+  Folder,
+  FileText,
+  FileImage,
+  FileSpreadsheet,
+  Trash2,
+  MoreVertical,
+  Eye
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -29,7 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 
 interface Document {
   id: string;
@@ -50,7 +50,7 @@ const Documents: React.FC<DocumentsProps> = ({ section }) => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Admin Login State
   const [isAdminAuth, setIsAdminAuth] = useState(false);
   const [loginData, setLoginData] = useState({ username: '', password: '' });
@@ -67,7 +67,7 @@ const Documents: React.FC<DocumentsProps> = ({ section }) => {
     // Management Docs
     { id: 'm1', name: 'Strategy 2025.pptx', type: 'doc', size: '8.1 MB', modified: 'Feb 4, 2024', owner: 'Management', shared: true, section: 'management' },
     { id: 'm2', name: 'Board Meeting Minutes', type: 'folder', size: '--', modified: 'Jan 30, 2024', owner: 'CEO Office', shared: false, section: 'management' },
-    
+
     { id: '3', name: 'Project Guidelines.docx', type: 'doc', size: '456 KB', modified: 'Jan 25, 2024', owner: 'PMO', shared: true },
     { id: '4', name: 'Employee Handbook.pdf', type: 'pdf', size: '3.2 MB', modified: 'Jan 20, 2024', owner: 'HR Team', shared: true },
     { id: '5', name: 'Inventory Sheet.xlsx', type: 'spreadsheet', size: '1.1 MB', modified: 'Jan 18, 2024', owner: 'Operations', shared: false },
@@ -118,19 +118,19 @@ const Documents: React.FC<DocumentsProps> = ({ section }) => {
             <form onSubmit={handleAdminLogin} className="space-y-6 py-6">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Username</Label>
-                <Input 
+                <Input
                   value={loginData.username}
-                  onChange={(e) => setLoginData({...loginData, username: e.target.value})}
+                  onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
                   placeholder="Enter admin username"
                   className="rounded-xl border-slate-100 h-12 font-bold"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Password</Label>
-                <Input 
+                <Input
                   type="password"
                   value={loginData.password}
-                  onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                   placeholder="••••••••"
                   className="rounded-xl border-slate-100 h-12 font-bold"
                 />
@@ -191,11 +191,10 @@ const Documents: React.FC<DocumentsProps> = ({ section }) => {
           </div>
           <div className="flex items-center gap-3">
             {['All Files', 'Shared', 'Recent'].map((label, idx) => (
-              <button 
+              <button
                 key={label}
-                className={`px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                  idx === 0 ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-white border border-slate-100 text-slate-500 hover:bg-slate-50'
-                }`}
+                className={`px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${idx === 0 ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-white border border-slate-100 text-slate-500 hover:bg-slate-50'
+                  }`}
               >
                 {label}
               </button>
@@ -241,7 +240,7 @@ const Documents: React.FC<DocumentsProps> = ({ section }) => {
           <tbody>
             {documents.length > 0 ? documents.map((doc) => {
               const { icon: FileIcon, color } = getFileIcon(doc.type);
-              
+
               return (
                 <tr key={doc.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer group">
                   <td className="py-6 px-8">
@@ -265,7 +264,7 @@ const Documents: React.FC<DocumentsProps> = ({ section }) => {
                   <td className="py-6 px-8 text-slate-500 font-bold hidden md:table-cell">{doc.owner}</td>
                   <td className="py-6 px-8 text-slate-400 font-medium hidden md:table-cell">{doc.modified}</td>
                   <td className="py-6 px-8 hidden sm:table-cell">
-                     <span className="px-3 py-1 bg-slate-100 rounded-lg text-slate-500 text-[10px] font-black uppercase tracking-widest border border-slate-200/50">{doc.size}</span>
+                    <span className="px-3 py-1 bg-slate-100 rounded-lg text-slate-500 text-[10px] font-black uppercase tracking-widest border border-slate-200/50">{doc.size}</span>
                   </td>
                   <td className="py-6 px-8">
                     <div className="flex items-center justify-end gap-3">

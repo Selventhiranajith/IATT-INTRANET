@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { CalendarIcon, Clock, Send, CheckCircle2, LogIn, LogOut, Timer, History, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 import {
   Dialog,
   DialogContent,

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 
 const leaveTypes = [
   { value: 'casual', label: 'Casual Leave', available: 5 },
@@ -44,8 +44,7 @@ const ApplyLeave: React.FC = () => {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    toast.success('Leave Request Submitted', {
-      description: 'Your leave application has been sent for approval.',
+    toast.success('Leave Request Submitted: Your leave application has been sent for approval.', {
       icon: <CheckCircle2 className="w-5 h-5 text-green-500" />,
     });
 
@@ -229,8 +228,8 @@ const ApplyLeave: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-slate-900 font-bold text-sm">{request.type}</span>
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-wider shadow-sm ${request.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                        request.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                          'bg-red-50 text-red-600 border-red-100'
+                      request.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        'bg-red-50 text-red-600 border-red-100'
                       }`}>
                       {request.status}
                     </span>

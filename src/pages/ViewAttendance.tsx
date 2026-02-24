@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, isToday, differenceInMinutes } from 'date-fns';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 
 interface AttendanceRecord {
   id: number;
@@ -351,8 +351,8 @@ const ViewAttendance: React.FC = () => {
                       {/* Status */}
                       <td className="py-4 px-6">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${isActive
-                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400'
-                            : 'bg-slate-50 text-slate-500 border-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400'
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400'
+                          : 'bg-slate-50 text-slate-500 border-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400'
                           }`}>
                           {isActive
                             ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />Working</>
@@ -404,8 +404,8 @@ const ViewAttendance: React.FC = () => {
                       key={p}
                       onClick={() => setCurrentPage(p as number)}
                       className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${currentPage === p
-                          ? 'bg-primary text-white shadow-md shadow-primary/30'
-                          : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 dark:text-slate-400'
+                        ? 'bg-primary text-white shadow-md shadow-primary/30'
+                        : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 dark:text-slate-400'
                         }`}
                     >
                       {p}
@@ -508,8 +508,8 @@ const ViewAttendance: React.FC = () => {
                               </span>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${isActive
-                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400'
-                                : 'bg-slate-50 text-slate-500 border border-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400'
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400'
+                              : 'bg-slate-50 text-slate-500 border border-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400'
                               }`}>
                               {isActive ? '🟢 Working' : '✔ Done'}
                             </span>
