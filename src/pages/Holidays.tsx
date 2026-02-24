@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { PartyPopper, Plus, Calendar, Edit2, Trash2, X, Check, Loader2, User, Sparkles, MapPin, ChevronRight, History, CalendarDays } from 'lucide-react';
-import { format, isAfter, startOfDay } from 'date-fns';
+import {
+  PartyPopper, Plus, Calendar, Edit2, Trash2, Loader2, History,
+  CalendarDays, Sparkles, Sun, Flower2, Snowflake, Leaf,
+  ChevronLeft, ChevronRight, X, Check, User
+} from 'lucide-react';
+import { format, isAfter, startOfDay, getMonth } from 'date-fns';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -24,158 +28,148 @@ interface Holiday {
   created_at: string;
 }
 
-const THEME_PALETTES = [
-  { bg: 'from-violet-500 to-purple-600', text: 'text-violet-600', light: 'bg-violet-50' },
-  { bg: 'from-rose-500 to-pink-600', text: 'text-rose-600', light: 'bg-rose-50' },
-  { bg: 'from-amber-500 to-orange-500', text: 'text-amber-600', light: 'bg-amber-50' },
-  { bg: 'from-teal-500 to-emerald-600', text: 'text-teal-600', light: 'bg-teal-50' },
-  { bg: 'from-sky-500 to-blue-600', text: 'text-sky-600', light: 'bg-sky-50' },
-  { bg: 'from-fuchsia-500 to-pink-500', text: 'text-fuchsia-600', light: 'bg-fuchsia-50' },
+/* ── helpers ── */
+const CARD_GRADIENTS = [
+  { grad: 'from-violet-500 to-purple-600', soft: 'bg-violet-50 border-violet-100', accent: 'text-violet-600', pill: 'bg-violet-100 text-violet-700' },
+  { grad: 'from-rose-500 to-pink-600', soft: 'bg-rose-50 border-rose-100', accent: 'text-rose-600', pill: 'bg-rose-100 text-rose-700' },
+  { grad: 'from-amber-400 to-orange-500', soft: 'bg-amber-50 border-amber-100', accent: 'text-amber-600', pill: 'bg-amber-100 text-amber-700' },
+  { grad: 'from-teal-500 to-emerald-600', soft: 'bg-teal-50 border-teal-100', accent: 'text-teal-600', pill: 'bg-teal-100 text-teal-700' },
+  { grad: 'from-sky-500 to-blue-600', soft: 'bg-sky-50 border-sky-100', accent: 'text-sky-600', pill: 'bg-sky-100 text-sky-700' },
+  { grad: 'from-fuchsia-500 to-pink-500', soft: 'bg-fuchsia-50 border-fuchsia-100', accent: 'text-fuchsia-600', pill: 'bg-fuchsia-100 text-fuchsia-700' },
+  { grad: 'from-indigo-500 to-blue-600', soft: 'bg-indigo-50 border-indigo-100', accent: 'text-indigo-600', pill: 'bg-indigo-100 text-indigo-700' },
+  { grad: 'from-lime-500 to-green-600', soft: 'bg-lime-50 border-lime-100', accent: 'text-lime-600', pill: 'bg-lime-100 text-lime-700' },
 ];
 
+const getSeasonIcon = (month: number) => {
+  if (month >= 2 && month <= 4) return <Flower2 className="w-4 h-4" />;
+  if (month >= 5 && month <= 7) return <Sun className="w-4 h-4" />;
+  if (month >= 8 && month <= 10) return <Leaf className="w-4 h-4" />;
+  return <Snowflake className="w-4 h-4" />;
+};
+
+/* ═══════════════════════════════ COMPONENT ═══════════════════════════════ */
 const Holidays: React.FC = () => {
   const { isAdmin } = useAuth();
+
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [currentHoliday, setCurrentHoliday] = useState<Holiday | null>(null);
   const [showCreatedBy, setShowCreatedBy] = useState(false);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
-  // Form state
+  /* ── modal state ── */
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentHoliday, setCurrentHoliday] = useState<Holiday | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /* ── form fields ── */
   const [holidayName, setHolidayName] = useState('');
   const [holidayDate, setHolidayDate] = useState<Date | undefined>(undefined);
   const [holidayDescription, setHolidayDescription] = useState('');
 
+  /* ─── API ─── */
   const fetchHolidays = async () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/holidays', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const res = await fetch('http://localhost:5000/api/holidays', {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.success) {
         setHolidays(data.data.holidays);
         setShowCreatedBy(data.data.isAdmin);
       }
-    } catch (error) {
-      console.error('Fetch holidays error:', error);
+    } catch {
       toast.error('Failed to load holidays');
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchHolidays();
-  }, []);
+  useEffect(() => { fetchHolidays(); }, []);
 
-  const handleCreateHoliday = async () => {
+  const resetForm = () => {
+    setHolidayName('');
+    setHolidayDate(undefined);
+    setHolidayDescription('');
+  };
+
+  const handleCreate = async () => {
     if (!holidayName.trim() || !holidayDate) {
       toast.error('Please enter holiday name and date');
       return;
     }
-
+    setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/holidays', {
+      const res = await fetch('http://localhost:5000/api/holidays', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: holidayName,
-          date: format(holidayDate, 'yyyy-MM-dd'),
-          description: holidayDescription
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ name: holidayName, date: format(holidayDate, 'yyyy-MM-dd'), description: holidayDescription })
       });
-
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.success) {
         toast.success('Holiday created successfully!');
         setIsAddModalOpen(false);
-        setHolidayName('');
-        setHolidayDate(undefined);
-        setHolidayDescription('');
+        resetForm();
         fetchHolidays();
       } else {
         toast.error(data.message || 'Failed to create holiday');
       }
-    } catch (error) {
-      console.error('Create holiday error:', error);
+    } catch {
       toast.error('Error creating holiday');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleUpdateHoliday = async () => {
+  const handleUpdate = async () => {
     if (!currentHoliday || !holidayName.trim() || !holidayDate) {
       toast.error('Please enter holiday name and date');
       return;
     }
-
+    setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/holidays/${currentHoliday.id}`, {
+      const res = await fetch(`http://localhost:5000/api/holidays/${currentHoliday.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: holidayName,
-          date: format(holidayDate, 'yyyy-MM-dd'),
-          description: holidayDescription
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ name: holidayName, date: format(holidayDate, 'yyyy-MM-dd'), description: holidayDescription })
       });
-
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.success) {
         toast.success('Holiday updated successfully!');
         setIsEditModalOpen(false);
         setCurrentHoliday(null);
-        setHolidayName('');
-        setHolidayDate(undefined);
-        setHolidayDescription('');
+        resetForm();
         fetchHolidays();
       } else {
         toast.error(data.message || 'Failed to update holiday');
       }
-    } catch (error) {
-      console.error('Update holiday error:', error);
+    } catch {
       toast.error('Error updating holiday');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleDeleteHoliday = async (id: number) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this holiday?')) return;
-
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/holidays/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/holidays/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.success) {
         toast.success('Holiday deleted successfully!');
         fetchHolidays();
       } else {
         toast.error(data.message || 'Failed to delete holiday');
       }
-    } catch (error) {
-      console.error('Delete holiday error:', error);
+    } catch {
       toast.error('Error deleting holiday');
     }
   };
@@ -188,371 +182,487 @@ const Holidays: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  // Split and group holidays
+  /* ── derived data ── */
   const { filteredGroups, counts } = useMemo(() => {
     const today = startOfDay(new Date());
-
-    const split = holidays.reduce<{ upcoming: Holiday[], past: Holiday[] }>(
+    const split = holidays.reduce<{ upcoming: Holiday[]; past: Holiday[] }>(
       (acc, h) => {
         const hDate = new Date(h.date);
-        if (isAfter(hDate, today) || format(hDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) {
-          acc.upcoming.push(h);
-        } else {
-          acc.past.push(h);
-        }
+        const isTodayOrFuture = isAfter(hDate, today) || format(hDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+        (isTodayOrFuture ? acc.upcoming : acc.past).push(h);
         return acc;
       },
       { upcoming: [], past: [] }
     );
 
-    const targetList = activeTab === 'upcoming' ? split.upcoming : split.past;
-
-    const grouped = targetList.reduce<Record<string, Holiday[]>>((acc, h) => {
+    const list = activeTab === 'upcoming' ? split.upcoming : split.past;
+    const grouped = list.reduce<Record<string, Holiday[]>>((acc, h) => {
       const key = format(new Date(h.date), 'MMMM yyyy');
       if (!acc[key]) acc[key] = [];
       acc[key].push(h);
       return acc;
     }, {});
 
-    const sortedGroups = Object.entries(grouped).sort(([a], [b]) => {
-      return activeTab === 'upcoming'
+    const sortedGroups = Object.entries(grouped).sort(([a], [b]) =>
+      activeTab === 'upcoming'
         ? new Date(a).getTime() - new Date(b).getTime()
-        : new Date(b).getTime() - new Date(a).getTime();
-    });
+        : new Date(b).getTime() - new Date(a).getTime()
+    );
 
-    return {
-      filteredGroups: sortedGroups,
-      counts: { upcoming: split.upcoming.length, past: split.past.length }
-    };
+    return { filteredGroups: sortedGroups, counts: { upcoming: split.upcoming.length, past: split.past.length } };
   }, [holidays, activeTab]);
 
-  const ModalFields = () => (
-    <div className="py-6 space-y-5">
-      <div className="space-y-2">
-        <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Holiday Name</Label>
-        <Input
-          placeholder="e.g., Independence Day"
-          value={holidayName}
-          onChange={(e) => setHolidayName(e.target.value)}
-          className="h-12 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-violet-400 focus:ring-4 focus:ring-violet-100 font-medium text-slate-900 transition-all"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
+  /* next holiday info */
+  const nextHoliday = useMemo(() => {
+    const today = startOfDay(new Date());
+    return holidays.filter(h => isAfter(new Date(h.date), today) || format(new Date(h.date), 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  }, [holidays]);
+
+
+  /* ════════════════════════════ JSX ════════════════════════════ */
+  return (
+    <div className="space-y-8 animate-fade-in pb-16">
+
+      {/* ── HERO BANNER ── */}
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#1e1b4b] via-[#4c1d95] to-[#6d28d9] p-8 shadow-2xl shadow-violet-900/30">
+        {/* blobs */}
+        <div className="pointer-events-none absolute -top-16 -right-16 w-72 h-72 rounded-full bg-violet-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-10 w-56 h-56 rounded-full bg-pink-500/15 blur-2xl" />
+        <div className="pointer-events-none absolute top-1/2 right-1/3 w-40 h-40 rounded-full bg-amber-400/10 blur-3xl" />
+
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          {/* left */}
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white backdrop-blur-sm">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              Corporate Calendar
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="rounded-2xl bg-white/15 p-3.5 backdrop-blur-sm border border-white/20">
+                <PartyPopper className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                  Holiday Calendar
+                </h1>
+                <p className="mt-1 text-sm font-medium text-violet-200/90">Celebrations, breaks &amp; company-wide events</p>
+              </div>
+            </div>
+
+            {/* stat chips */}
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white">
+                <CalendarDays className="w-3.5 h-3.5 text-emerald-300" />
+                {counts.upcoming} Upcoming
+              </div>
+              <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-white">
+                <History className="w-3.5 h-3.5 text-slate-300" />
+                {counts.past} Past
+              </div>
+              {nextHoliday && (
+                <div className="flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-400/20 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-amber-200">
+                  <Calendar className="w-3.5 h-3.5" />
+                  Next: {nextHoliday.name}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* right – add button */}
+          {isAdmin && (
             <button
-              type="button"
+              onClick={() => { resetForm(); setIsAddModalOpen(true); }}
+              className="inline-flex items-center gap-3 rounded-2xl border border-white/25 bg-white text-violet-700 px-6 py-3.5 text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              Add Holiday
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── TABS ── */}
+      <div className="flex items-center justify-center">
+        <div className="flex gap-1.5 rounded-[1.5rem] border border-slate-200/80 bg-slate-100/60 p-1.5 backdrop-blur-sm">
+          {(['upcoming', 'past'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
               className={cn(
-                'w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200 text-left flex items-center justify-between hover:bg-white hover:border-violet-400 hover:ring-4 hover:ring-violet-100 transition-all font-medium',
-                !holidayDate ? 'text-slate-400' : 'text-slate-900'
+                'flex items-center gap-2.5 rounded-2xl px-7 py-3 text-[11px] font-black uppercase tracking-widest transition-all',
+                activeTab === tab
+                  ? 'bg-white text-violet-600 shadow-md ring-1 ring-slate-200/60'
+                  : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
               )}
             >
-              {holidayDate ? format(holidayDate, 'PPP') : 'Select date'}
-              <Calendar className="w-5 h-5 text-slate-400" />
+              {tab === 'upcoming'
+                ? <CalendarDays className={cn('w-4 h-4', activeTab === tab ? 'text-violet-500' : 'text-slate-300')} />
+                : <History className={cn('w-4 h-4', activeTab === tab ? 'text-violet-500' : 'text-slate-300')} />}
+              {tab} Holidays
+              <span className={cn(
+                'rounded-lg px-2 py-0.5 text-[10px] font-black',
+                activeTab === tab ? 'bg-violet-100 text-violet-600' : 'bg-slate-200 text-slate-500'
+              )}>
+                {counts[tab]}
+              </span>
             </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-white border border-slate-100 rounded-2xl shadow-2xl" align="start">
-            <CalendarPicker
-              mode="single"
-              selected={holidayDate}
-              onSelect={(date) => setHolidayDate(date)}
-              className="pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      <div className="space-y-2">
-        <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Description <span className="text-slate-300 normal-case font-medium">(Optional)</span></Label>
-        <Textarea
-          placeholder="Brief description of the holiday..."
-          value={holidayDescription}
-          onChange={(e) => setHolidayDescription(e.target.value)}
-          className="min-h-[90px] rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-violet-400 focus:ring-4 focus:ring-violet-100 font-medium resize-none transition-all"
-        />
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="space-y-10 animate-fade-in pb-16">
-      {/* ── HERO HEADER ── */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-10 shadow-2xl shadow-violet-200/50">
-        <div className="pointer-events-none absolute -top-10 -right-10 w-80 h-80 rounded-full bg-white/10 blur-3xl opacity-50" />
-        <div className="pointer-events-none absolute bottom-0 left-20 w-64 h-64 rounded-full bg-pink-400/20 blur-2xl opacity-40" />
-
-        <div className="relative flex items-center justify-between flex-wrap gap-8">
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20 transform hover:rotate-6 transition-transform">
-              <PartyPopper className="w-10 h-10 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-black text-white tracking-tight drop-shadow">Holidays</h1>
-              <p className="text-violet-100 font-medium mt-1 text-lg opacity-90">Corporate holiday calendar & celebrations</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 bg-black/10 backdrop-blur-xl p-2 rounded-[2rem] border border-white/10">
-            {isAdmin && (
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="px-8 py-4 bg-white text-violet-700 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl hover:scale-[1.03] active:scale-[0.98] transition-all flex items-center gap-3 group"
-              >
-                <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                Add Holiday
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── SEPARATION TABS ── */}
-      <div className="flex items-center justify-center">
-        <div className="bg-slate-100/50 p-1.5 rounded-[1.5rem] flex gap-2 border border-slate-100 backdrop-blur-sm">
-          <button
-            onClick={() => setActiveTab('upcoming')}
-            className={cn(
-              "flex items-center gap-2.5 px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
-              activeTab === 'upcoming'
-                ? "bg-white text-violet-600 shadow-md ring-1 ring-slate-100"
-                : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
-            )}
-          >
-            <CalendarDays className={cn("w-4 h-4", activeTab === 'upcoming' ? "text-violet-500" : "text-slate-300")} />
-            Upcoming Holidays
-            <span className={cn(
-              "ml-1 px-2 py-0.5 rounded-lg text-[10px]",
-              activeTab === 'upcoming' ? "bg-violet-100 text-violet-600" : "bg-slate-200 text-slate-500"
-            )}>{counts.upcoming}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('past')}
-            className={cn(
-              "flex items-center gap-2.5 px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
-              activeTab === 'past'
-                ? "bg-white text-violet-600 shadow-md ring-1 ring-slate-100"
-                : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
-            )}
-          >
-            <History className={cn("w-4 h-4", activeTab === 'past' ? "text-violet-500" : "text-slate-300")} />
-            Past Holidays
-            <span className={cn(
-              "ml-1 px-2 py-0.5 rounded-lg text-[10px]",
-              activeTab === 'past' ? "bg-violet-100 text-violet-600" : "bg-slate-200 text-slate-500"
-            )}>{counts.past}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── CONTENT (SEPARATE VIEW) ── */}
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-32 gap-6">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-full border-4 border-slate-100 border-t-violet-500 animate-spin" />
-            <PartyPopper className="w-8 h-8 text-violet-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-xs">Organizing Calendar...</p>
-        </div>
-      ) : filteredGroups.length > 0 ? (
-        <div className="space-y-16">
-          {filteredGroups.map(([month, items]) => (
-            <div key={month} className="animate-slide-up relative">
-              <div className="flex items-center gap-6 mb-8 group">
-                <div className="flex flex-col">
-                  <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Calendar Range</span>
-                  <span className="text-2xl font-black text-slate-900 tracking-tight">{month}</span>
-                </div>
-                <div className="h-px flex-1 bg-gradient-to-r from-slate-200 via-slate-100 to-transparent" />
-                <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                  {items.length} {items.length === 1 ? 'Event' : 'Events'}
-                </div>
-              </div>
-
-              <div className="bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 ring-1 ring-slate-50">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left table-fixed">
-                    <thead>
-                      <tr className="bg-slate-50/50 border-b border-slate-100">
-                        <th className="w-[20%] py-6 px-10 text-[10px] font-black uppercase tracking-widest text-slate-400">Date & Day</th>
-                        <th className="w-[20%] py-6 px-10 text-[10px] font-black uppercase tracking-widest text-slate-400">Holiday Name</th>
-                        <th className="w-[35%] py-6 px-10 text-[10px] font-black uppercase tracking-widest text-slate-400">About</th>
-                        {showCreatedBy && <th className="w-[15%] py-6 px-10 text-[10px] font-black uppercase tracking-widest text-slate-400">Created By</th>}
-                        {isAdmin && <th className="w-[10%] py-6 px-10 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Settings</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {items.map((holiday, idx) => {
-                        const palette = THEME_PALETTES[idx % THEME_PALETTES.length];
-                        const d = new Date(holiday.date);
-
-                        return (
-                          <tr key={holiday.id} className="group hover:bg-slate-50/50 transition-all duration-300">
-                            <td className="py-8 px-10">
-                              <div className="flex items-center gap-4">
-                                <div className={cn("shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br flex flex-col items-center justify-center text-white shadow-lg",
-                                  activeTab === 'past' ? "grayscale opacity-80" : "", palette.bg)}>
-                                  <span className="text-[10px] font-black uppercase leading-none mb-1 opacity-80">{format(d, 'MMM')}</span>
-                                  <span className="text-xl font-black leading-none">{format(d, 'dd')}</span>
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-slate-900 font-black text-sm tracking-tight truncate">{format(d, 'EEEE')}</span>
-                                  <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{format(d, 'yyyy')}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-8 px-10">
-                              <div className="flex items-center gap-3">
-                                <span className={cn("text-lg font-black tracking-tight",
-                                  activeTab === 'past' ? "text-slate-400" : "text-slate-900")}>
-                                  {holiday.name}
-                                </span>
-                                {activeTab === 'upcoming' && idx === 0 && month === filteredGroups[0][0] && (
-                                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-md animate-pulse">Next Up</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-8 px-10">
-                              <p className={cn("text-sm font-medium leading-relaxed italic line-clamp-3",
-                                activeTab === 'past' ? "text-slate-300" : "text-slate-500")}>
-                                {holiday.description || `Celebrate ${holiday.name} with your team members.`}
-                              </p>
-                            </td>
-                            {showCreatedBy && (
-                              <td className="py-8 px-10">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200">
-                                    <User className="w-4 h-4 text-slate-400" />
-                                  </div>
-                                  <span className="text-slate-600 text-[11px] font-black truncate">{holiday.creator_first_name}</span>
-                                </div>
-                              </td>
-                            )}
-                            {isAdmin && (
-                              <td className="py-8 px-10 text-right">
-                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
-                                  <button
-                                    onClick={() => openEditModal(holiday)}
-                                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 shadow-sm text-slate-400 hover:text-violet-600 hover:border-violet-200 hover:shadow-violet-100 hover:scale-110 active:scale-90 transition-all"
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteHoliday(holiday.id)}
-                                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 shadow-sm text-slate-400 hover:text-red-500 hover:border-red-200 hover:shadow-red-100 hover:scale-110 active:scale-90 transition-all"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </td>
-                            )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
           ))}
         </div>
-      ) : (
-        <div className="bg-white border border-slate-100 rounded-[3rem] p-32 text-center shadow-sm relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+
+      {/* ── CONTENT ── */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center gap-5 py-32">
           <div className="relative">
-            <div className="w-32 h-32 mx-auto rounded-[3rem] bg-gradient-to-br from-slate-100 to-indigo-50 flex items-center justify-center mb-10 shadow-inner group-hover:scale-110 transition-transform duration-500">
-              {activeTab === 'upcoming' ? (
-                <CalendarDays className="w-16 h-16 text-slate-300" />
-              ) : (
-                <History className="w-16 h-16 text-slate-300" />
-              )}
-            </div>
-            <h3 className="text-slate-900 font-black text-3xl mb-4 tracking-tight">No {activeTab} holidays</h3>
-            <p className="text-slate-400 font-medium mb-12 max-w-sm mx-auto leading-relaxed text-lg">
+            <div className="h-20 w-20 animate-spin rounded-full border-4 border-slate-100 border-t-violet-500" />
+            <PartyPopper className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 text-violet-500" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Organising Calendar…</p>
+        </div>
+      ) : filteredGroups.length > 0 ? (
+        <div className="space-y-12">
+          {filteredGroups.map(([month, items]) => {
+            const monthIndex = new Date(items[0].date).getMonth();
+            return (
+              <div key={month}>
+                {/* month heading */}
+                <div className="mb-6 flex items-center gap-4">
+                  <div className={cn('flex items-center gap-2 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-widest text-slate-500 border',
+                    'bg-slate-50 border-slate-200')}>
+                    {getSeasonIcon(monthIndex)}
+                    {month}
+                  </div>
+                  <div className="h-px flex-1 bg-gradient-to-r from-slate-200 via-slate-100 to-transparent" />
+                  <span className="rounded-lg bg-slate-100 border border-slate-200 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    {items.length} {items.length === 1 ? 'event' : 'events'}
+                  </span>
+                </div>
+
+                {/* cards grid */}
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {items.map((holiday, idx) => {
+                    const palette = CARD_GRADIENTS[(idx + monthIndex) % CARD_GRADIENTS.length];
+                    const d = new Date(holiday.date);
+                    const isPast = activeTab === 'past';
+                    const isNextUp = activeTab === 'upcoming' && idx === 0 && month === filteredGroups[0][0];
+
+                    return (
+                      <div
+                        key={holiday.id}
+                        className={cn(
+                          'group relative overflow-hidden rounded-[1.75rem] border bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl',
+                          isPast ? 'border-slate-100 hover:shadow-slate-200/40' : 'border-slate-200/70 hover:shadow-violet-200/30'
+                        )}
+                      >
+                        {/* top gradient strip */}
+                        <div className={cn('h-1.5 w-full bg-gradient-to-r', isPast ? 'from-slate-300 to-slate-200' : palette.grad)} />
+
+                        {/* card body */}
+                        <div className="flex flex-col gap-4 p-6">
+                          {/* date badge + actions row */}
+                          <div className="flex items-start justify-between">
+                            <div className={cn(
+                              'flex flex-col items-center justify-center rounded-2xl px-4 py-2 shadow-sm border',
+                              isPast ? 'bg-slate-100 border-slate-200' : palette.soft,
+                            )}>
+                              <span className={cn('text-[10px] font-black uppercase leading-none tracking-widest', isPast ? 'text-slate-400' : palette.accent)}>
+                                {format(d, 'MMM')}
+                              </span>
+                              <span className={cn('text-3xl font-black leading-tight', isPast ? 'text-slate-400' : palette.accent)}>
+                                {format(d, 'dd')}
+                              </span>
+                              <span className={cn('text-[9px] font-bold uppercase tracking-widest', isPast ? 'text-slate-300' : palette.accent + '/70')}>
+                                {format(d, 'yyyy')}
+                              </span>
+                            </div>
+
+                            {/* admin action buttons */}
+                            {isAdmin && (
+                              <div className="flex items-center gap-1.5 opacity-0 transition-all duration-200 group-hover:opacity-100">
+                                <button
+                                  onClick={() => openEditModal(holiday)}
+                                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-400 shadow-sm hover:border-violet-200 hover:text-violet-600 hover:shadow-violet-100 transition-all hover:scale-110 active:scale-90"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(holiday.id)}
+                                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-400 shadow-sm hover:border-red-200 hover:text-red-500 hover:shadow-red-100 transition-all hover:scale-110 active:scale-90"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* name + "Next Up" badge */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className={cn(
+                              'text-lg font-black tracking-tight leading-tight',
+                              isPast ? 'text-slate-400' : 'text-slate-900'
+                            )}>
+                              {holiday.name}
+                            </h3>
+                            {isNextUp && (
+                              <span className="animate-pulse rounded-lg bg-emerald-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-600">
+                                Next Up
+                              </span>
+                            )}
+                            {isPast && (
+                              <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                Past
+                              </span>
+                            )}
+                          </div>
+
+                          {/* day of week */}
+                          <div className={cn('flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest',
+                            isPast ? 'text-slate-300' : 'text-slate-400')}>
+                            <Calendar className="h-3 w-3" />
+                            {format(d, 'EEEE')}
+                          </div>
+
+                          {/* description */}
+                          <p className={cn('text-sm leading-relaxed line-clamp-2 font-medium',
+                            isPast ? 'text-slate-300' : 'text-slate-500')}>
+                            {holiday.description || `Celebrate ${holiday.name} with your team.`}
+                          </p>
+
+                          {/* footer */}
+                          <div className="mt-1 flex items-center justify-between border-t border-slate-100 pt-4">
+                            <span className={cn('rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-widest',
+                              isPast ? 'border-slate-100 bg-slate-50 text-slate-300' : palette.soft + ' ' + palette.accent)}>
+                              {holiday.branch || 'All Branches'}
+                            </span>
+
+                            {showCreatedBy && holiday.creator_first_name && (
+                              <div className="flex items-center gap-1.5">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 border border-slate-200">
+                                  <User className="h-3 w-3 text-slate-400" />
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-400">
+                                  {holiday.creator_first_name} {holiday.creator_last_name}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* empty state */
+        <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-24 text-center shadow-sm">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-violet-50/30 to-transparent" />
+          <div className="relative">
+            <div className="mx-auto mb-8 flex h-28 w-28 items-center justify-center rounded-[2rem] bg-gradient-to-br from-violet-100 to-slate-100 shadow-inner">
               {activeTab === 'upcoming'
-                ? "The upcoming calendar looks clear for now. Why not plan the next team break?"
-                : "Your holiday history begins once an event starts and completes!"}
+                ? <CalendarDays className="h-14 w-14 text-violet-300" />
+                : <History className="h-14 w-14 text-slate-300" />}
+            </div>
+            <h3 className="mb-3 text-2xl font-black tracking-tight text-slate-900">No {activeTab} holidays</h3>
+            <p className="mx-auto mb-10 max-w-sm text-base font-medium leading-relaxed text-slate-400">
+              {activeTab === 'upcoming'
+                ? 'The calendar is clear. Plan the next team celebration!'
+                : 'Holiday history will appear here once events pass.'}
             </p>
             {isAdmin && activeTab === 'upcoming' && (
               <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="inline-flex items-center gap-4 px-12 py-5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-violet-200 hover:shadow-violet-400 hover:scale-105 active:scale-95 transition-all"
+                onClick={() => { resetForm(); setIsAddModalOpen(true); }}
+                className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 px-10 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-violet-200 hover:shadow-violet-400 hover:scale-105 active:scale-95 transition-all"
               >
-                <Plus className="w-5 h-5" />
-                Plan First Event
+                <Plus className="h-4 w-4" />
+                Add First Holiday
               </button>
             )}
           </div>
         </div>
       )}
 
-      {/* ── MODALS (SAME LOGIC, PREMIUM RE-STYLE) ── */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="sm:max-w-[550px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 p-10 pb-14">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xl flex items-center justify-center border border-white/20 shadow-inner">
-                <Plus className="w-8 h-8 text-white" />
+      {/* ════════════ ADD MODAL ════════════ */}
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => { setIsAddModalOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white flex flex-col">
+          {/* header */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 p-8 shrink-0">
+            <div className="pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative flex items-center gap-4">
+              <div className="flex h-13 w-13 items-center justify-center rounded-2xl border border-white/20 bg-white/15 backdrop-blur-sm p-3">
+                <PartyPopper className="h-7 w-7 text-white" />
               </div>
               <div>
-                <DialogTitle className="text-3xl font-black text-white tracking-tight">Project Holiday</DialogTitle>
-                <p className="text-violet-100/60 text-sm font-bold uppercase tracking-widest mt-1">Calendar Initialization</p>
+                <DialogTitle className="text-2xl font-black tracking-tight text-white">Add Holiday</DialogTitle>
+                <p className="mt-0.5 text-sm font-medium text-violet-200/80">Schedule a new company holiday</p>
               </div>
             </div>
           </div>
-          <div className="p-10 -mt-8 rounded-t-[3rem] bg-white relative shadow-2xl">
-            <ModalFields />
-            <DialogFooter className="mt-10 gap-4 sm:flex-row flex-col">
-              <Button
-                onClick={() => setIsAddModalOpen(false)}
-                variant="ghost"
-                className="flex-1 rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-400 hover:text-slate-600 hover:bg-slate-50 h-16 transition-all"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateHoliday}
-                className="flex-[2] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-violet-200 h-16 hover:scale-[1.03] active:scale-95 transition-all"
-              >
-                Publish Holiday
-              </Button>
-            </DialogFooter>
+
+          {/* body */}
+          <div className="flex-1 overflow-y-auto p-8">
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Holiday Name *</Label>
+                <Input
+                  placeholder="e.g., Independence Day"
+                  value={holidayName}
+                  onChange={(e) => setHolidayName(e.target.value)}
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50 focus:bg-white font-semibold text-slate-900 transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        'w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 text-left flex items-center justify-between hover:bg-white transition-all font-semibold',
+                        !holidayDate ? 'text-slate-400' : 'text-slate-900'
+                      )}
+                    >
+                      {holidayDate ? format(holidayDate, 'PPP') : 'Pick a date'}
+                      <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 rounded-2xl shadow-2xl border-slate-100" align="start">
+                    <CalendarPicker
+                      mode="single"
+                      selected={holidayDate}
+                      onSelect={(date) => setHolidayDate(date)}
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                  Description <span className="capitalize font-normal text-slate-300">(optional)</span>
+                </Label>
+                <Textarea
+                  placeholder="Brief description of the holiday..."
+                  value={holidayDescription}
+                  onChange={(e) => setHolidayDescription(e.target.value)}
+                  className="min-h-[90px] rounded-xl border-slate-200 bg-slate-50 focus:bg-white font-medium resize-none transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* footer */}
+          <div className="shrink-0 border-t border-slate-100 p-6 flex gap-3 justify-end">
+            <Button
+              variant="ghost"
+              onClick={() => { setIsAddModalOpen(false); resetForm(); }}
+              className="rounded-xl font-bold text-slate-400 hover:text-slate-600 h-11 px-6"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={isSubmitting}
+              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-black uppercase tracking-widest text-[11px] shadow-md shadow-violet-500/30 h-11 px-8 hover:from-violet-700 hover:to-indigo-700 transition-all"
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4 mr-2" />Publish Holiday</>}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[550px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 p-10 pb-14">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xl flex items-center justify-center border border-white/20 shadow-inner">
-                <Edit2 className="w-8 h-8 text-white" />
+      {/* ════════════ EDIT MODAL ════════════ */}
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => { setIsEditModalOpen(open); if (!open) { setCurrentHoliday(null); resetForm(); } }}>
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white flex flex-col">
+          {/* header */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 p-8 shrink-0">
+            <div className="pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative flex items-center gap-4">
+              <div className="flex h-13 w-13 items-center justify-center rounded-2xl border border-white/20 bg-white/15 backdrop-blur-sm p-3">
+                <Edit2 className="h-7 w-7 text-white" />
               </div>
               <div>
-                <DialogTitle className="text-3xl font-black text-white tracking-tight">Edit Event</DialogTitle>
-                <p className="text-amber-100/60 text-sm font-bold uppercase tracking-widest mt-1">Update Schedule Details</p>
+                <DialogTitle className="text-2xl font-black tracking-tight text-white">Edit Holiday</DialogTitle>
+                <p className="mt-0.5 text-sm font-medium text-amber-100/80">
+                  {currentHoliday?.name}
+                </p>
               </div>
             </div>
           </div>
-          <div className="p-10 -mt-8 rounded-t-[3rem] bg-white relative shadow-2xl">
-            <ModalFields />
-            <DialogFooter className="mt-10 gap-4 sm:flex-row flex-col">
-              <Button
-                onClick={() => setIsEditModalOpen(false)}
-                variant="ghost"
-                className="flex-1 rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-400 hover:text-slate-600 hover:bg-slate-50 h-16 transition-all"
-              >
-                Discard
-              </Button>
-              <Button
-                onClick={handleUpdateHoliday}
-                className="flex-[2] bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-amber-200 h-16 hover:scale-[1.03] active:scale-95 transition-all"
-              >
-                Save Changes
-              </Button>
-            </DialogFooter>
+
+          {/* body */}
+          <div className="flex-1 overflow-y-auto p-8">
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Holiday Name *</Label>
+                <Input
+                  placeholder="e.g., Independence Day"
+                  value={holidayName}
+                  onChange={(e) => setHolidayName(e.target.value)}
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50 focus:bg-white font-semibold text-slate-900 transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        'w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 text-left flex items-center justify-between hover:bg-white transition-all font-semibold',
+                        !holidayDate ? 'text-slate-400' : 'text-slate-900'
+                      )}
+                    >
+                      {holidayDate ? format(holidayDate, 'PPP') : 'Pick a date'}
+                      <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 rounded-2xl shadow-2xl border-slate-100" align="start">
+                    <CalendarPicker
+                      mode="single"
+                      selected={holidayDate}
+                      onSelect={(date) => setHolidayDate(date)}
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                  Description <span className="capitalize font-normal text-slate-300">(optional)</span>
+                </Label>
+                <Textarea
+                  placeholder="Brief description of the holiday..."
+                  value={holidayDescription}
+                  onChange={(e) => setHolidayDescription(e.target.value)}
+                  className="min-h-[90px] rounded-xl border-slate-200 bg-slate-50 focus:bg-white font-medium resize-none transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* footer */}
+          <div className="shrink-0 border-t border-slate-100 p-6 flex gap-3 justify-end">
+            <Button
+              variant="ghost"
+              onClick={() => { setIsEditModalOpen(false); setCurrentHoliday(null); resetForm(); }}
+              className="rounded-xl font-bold text-slate-400 hover:text-slate-600 h-11 px-6"
+            >
+              Discard
+            </Button>
+            <Button
+              onClick={handleUpdate}
+              disabled={isSubmitting}
+              className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black uppercase tracking-widest text-[11px] shadow-md shadow-amber-400/30 h-11 px-8 hover:from-amber-600 hover:to-orange-600 transition-all"
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4 mr-2" />Save Changes</>}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 };

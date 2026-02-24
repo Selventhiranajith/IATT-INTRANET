@@ -380,8 +380,8 @@ const ManualAttendance: React.FC = () => {
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <p>
                 {status === 'inactive'
-                  ? "State your reason for checking in (e.g. 'Starting work', 'Back from break')."
-                  : "State your reason for checking out (e.g. 'Lunch break', 'End of day')."}
+                  ? "State your reason for checking in."
+                  : "State your reason for checking out."}
               </p>
             </div>
 
