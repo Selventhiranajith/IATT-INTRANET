@@ -201,7 +201,7 @@ const EmployeePage: React.FC = () => {
       department: employee.department === 'General' ? '' : employee.department,
       position: employee.role === 'Staff' ? '' : employee.role,
       branch: employee.branch || '',
-      birth_date: employee.birth_date || '',
+      birth_date: employee.birth_date ? employee.birth_date.slice(0, 10) : '',
       phone: employee.phone || '',
       status: employee.status,
     });
