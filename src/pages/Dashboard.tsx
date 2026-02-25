@@ -587,12 +587,7 @@ const Dashboard: React.FC = () => {
             )}
           </div>
 
-          <button
-            onClick={() => navigate('/admin/users')}
-            className="mt-auto py-3.5 rounded-2xl bg-slate-900 dark:bg-slate-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-500 transition-all shadow-lg shadow-slate-900/20 active:scale-95 z-10"
-          >
-            View All Members
-          </button>
+
         </div>
 
         {/* ── Upcoming Birthdays ── */}
