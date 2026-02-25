@@ -319,24 +319,27 @@ VALUES
     ('ADM002', 'admin.nungambakkam@iattechnologies.com', 'admin123',
      'Nungambakkam', 'Admin', 'admin', 'Nungambakkam', 'Operations', 'Branch Manager', 'active', '1988-03-22');
 
--- -----------------------------------------------------------------------------
--- Sample Employee – Guindy branch
--- Login: employee.guindy@iattechnologies.com / employee123
--- -----------------------------------------------------------------------------
-INSERT INTO users
-    (employee_id, email, password, first_name, last_name, role, branch, department, position, status, birth_date)
-VALUES
-    ('EMP001', 'employee.guindy@iattechnologies.com', 'employee123',
-     'John', 'Doe', 'employee', 'Guindy', 'Development', 'Software Engineer', 'active', '1995-08-10');
 
--- -----------------------------------------------------------------------------
--- Sample Thoughts of the Day
--- (created_by = 1 → Superadmin SA001)
--- -----------------------------------------------------------------------------
-INSERT INTO thoughts (content, author, branch, created_by, is_active) VALUES
-('Success is not final, failure is not fatal: it is the courage to continue that counts.',
- 'Winston Churchill', 'Guindy', 1, 1),
-('The only way to do great work is to love what you do.',
- 'Steve Jobs', 'Nungambakkam', 1, 1),
-('Innovation distinguishes between a leader and a follower.',
- 'Steve Jobs', 'Guindy', 1, 1);
+
+
+-- -- -----------------------------------------------------------------------------
+-- -- Sample Employee – Guindy branch
+-- -- Login: employee.guindy@iattechnologies.com / employee123
+-- -- -----------------------------------------------------------------------------
+-- INSERT INTO users
+--     (employee_id, email, password, first_name, last_name, role, branch, department, position, status, birth_date)
+-- VALUES
+--     ('EMP001', 'employee.guindy@iattechnologies.com', 'employee123',
+--      'John', 'Doe', 'employee', 'Guindy', 'Development', 'Software Engineer', 'active', '1995-08-10');
+
+-- -- -----------------------------------------------------------------------------
+-- -- Sample Thoughts of the Day
+-- -- (created_by = 1 → Superadmin SA001)
+-- -- -----------------------------------------------------------------------------
+-- INSERT INTO thoughts (content, author, branch, created_by, is_active) VALUES
+-- ('Success is not final, failure is not fatal: it is the courage to continue that counts.',
+--  'Winston Churchill', 'Guindy', 1, 1),
+-- ('The only way to do great work is to love what you do.',
+--  'Steve Jobs', 'Nungambakkam', 1, 1),
+-- ('Innovation distinguishes between a leader and a follower.',
+--  'Steve Jobs', 'Guindy', 1, 1);
